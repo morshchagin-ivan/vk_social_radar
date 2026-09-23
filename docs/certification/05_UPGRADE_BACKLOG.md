@@ -1,15 +1,15 @@
-# Certification Architecture Upgrade — proposed backlog
+# Certification Architecture Upgrade — backlog
 
-Дата: 2026-09-23. Только план следующей итерации; ни одна задача здесь не выполнена. Основание — проверенные gaps из [03](03_SDD_CODE_GAP_ANALYSIS.md). XS = несколько часов, S = примерно 1 день, M = несколько дней, L = неделя и более при текущем монолитном коде; это относительные инженерные оценки, не календарное обязательство.
+Дата: 2026-09-23. Исходный backlog построен по проверенным gaps из [03](03_SDD_CODE_GAP_ANALYSIS.md). U02 теперь **IMPLEMENTED** — [отчёт и проверки](U02_SCHEMA_MIGRATION_REPORT.md); U03+ остаются planned. XS = несколько часов, S = примерно 1 день, M = несколько дней, L = неделя и более при текущем монолитном коде; это относительные инженерные оценки, не календарное обязательство.
 
 P0 — закрыть до защиты **принятого scope**. Если функция исключается из certification version, нужно удалить её из утверждений о реализации, сохранить как target и согласовать это с требованиями курса. Это не даёт статуса IMPLEMENTED. Provider и RAG имеют P0 потому, что включены в заявленную архитектуру и предмет аудита; не предполагается, что формальная рубрика курса уже проверена.
 
-## P0 — 8 blockers
+## P0 — 8 исходных задач; U02 закрыта в коде
 
 | ID | Priority | Problem | Expected result / acceptance evidence | Files likely affected | Dependencies | Effort | Certification value |
 |---|---|---|---|---|---|---|---|
 | U01 | P0 | Нет согласованного AS-IS/target scope и известной ревизии; дубли SDD | Зафиксировать certification scope, ветку/commit на настоящем repo, requirement→code→test matrix; canonical docs с явным AS-IS/target; принять ADR-001…006 с consequences. Нельзя считать unchecked tasks выполненными | `spec.md`, 08/09/15/16 docs, `specs/001-vk-profile-analysis/`, будущие ADR docs; `.git` только read-only identification | audit | S | HIGH |
-| U02 | P0 | Installed collector_dialogs несовместима с текущим DDL | Версионированная migration 6→13 columns, backup/rollback procedure; тест old DB→new DB сохраняет rows и позволяет metadata save; idempotent repeated startup. Не ограничиваться fresh CREATE TABLE | `app/db.py`, `app/services.py`, `tests/` | U01 scope; не требует U03 | M | HIGH |
+| U02 | P0 — IMPLEMENTED | Legacy collector_dialogs 6 columns vs DDL 13; defect RESOLVED in code | user_version 0→1; SQLite backup; additive 6→13; preservation/runtime save/rollback/idempotency/future guard/FK PASS; 14 new + 18 existing unittest + 8 functions PASS. User DB untouched; [report](U02_SCHEMA_MIGRATION_REPORT.md) | `app/db.py`, `app/migrations.py`, `tests/test_migrations.py`, isolated existing tests, seven status docs + report | U01 scope; не требует U03 | M | HIGH |
 | U03 | P0 | Нет immutable snapshot aggregate, same-day/empty/repeat/backdated дефекты | Snapshot header с run/time/schema/completeness, immutable source items, empty snapshots валидны, selected previous/current semantics; стабильные IDs/provenance. Исторический read не меняется при обновлении Person; повтор операции не дублирует events. Fixtures подтверждают выявленные 3 дефекта и out-of-order imports | `app/db.py`, `app/services.py`, `app/collector.py`, `app/importers.py`, `tests/`, `10_DATA_MODEL.md` | U01, U02 migration foundation | L | HIGH |
 | U04 | P0 | Target OpenAPI и actual API несовместимы; generic schemas | Один согласованный contract для certification surface, request/response models, errors/status/security policy; typed generated schema и canonical YAML согласованы. Tests проверяют exact method/path/body/error/auth; `/health` честно описан как liveness или дополнен readiness | `app/main.py`, будущие schema types, `11_OPENAPI.yaml`, `12_API_GUIDE.md`, `static/app.js`, API tests | U01; новые snapshot paths после U03 | M | HIGH |
 | U05 | P0 | Vendor abstraction заявлена, но main/AI привязаны к LM Studio | Минимальный provider interface, normalized request/result/error, composition selection, LM Studio implementation. Prompt/business use case зависит от port. Contract tests с fake transport; Ollama adapter только если заявлен scope, иначе явно deferred. JSON result валидируется локально | `app/lmstudio.py`, `app/main.py`, будущий provider/use-case module, `app/db.py` settings, tests | U01, U04 contract decisions | M | HIGH |
@@ -41,9 +41,9 @@ P0 — закрыть до защиты **принятого scope**. Если �
 ## Порядок и границы следующей итерации
 
 1. U01: утвердить предмет демонстрации и canonical contract. Технологический стек сохранять, пока нет требования его менять.
-2. U02/U03: совместимость данных и воспроизводимый source of truth. U06 security evidence вести одновременно с read-only Git audit, когда доступен настоящий checkout.
+2. U02 выполнена; следующая рекомендация — U03: воспроизводимый source of truth. U06 security evidence остаётся отдельной работой на доступном Git checkout.
 3. U04/U05: контракты API и provider; U07 собирает проверки по мере появления реализаций.
 4. U08: только после стабильного source model/provider; доказать узкий retrieval scenario и source citations.
 5. U09–U13 по времени и измеримым рискам. P2 не затягивать в certification iteration без изменения scope.
 
-Definition of Done upgrade: known commit; green reproducible gates; installed DB migration proof; empty/repeated/same-day snapshot semantics; typed actual API; заявленные provider/RAG capabilities подтверждены mocks/eval и synthetic demo; local/privacy invariant проверен; SDD называет отсутствующие функции target. Это критерии будущей итерации, не результаты данного аудита.
+Definition of Done upgrade: known commit; green reproducible gates; installed DB migration proof; empty/repeated/same-day snapshot semantics; typed actual API; заявленные provider/RAG capabilities подтверждены mocks/eval и synthetic demo; local/privacy invariant проверен; SDD называет отсутствующие функции target. U02 доказывает только schema migration на synthetic legacy DB; весь upgrade и Data Architecture не объявляются READY.

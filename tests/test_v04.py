@@ -5,7 +5,10 @@ class V04Tests(unittest.TestCase):
     def setUp(self):
         self.tmp=tempfile.TemporaryDirectory()
         from app import db
-        self.p=patch.object(db,"DB_PATH",Path(self.tmp.name)/"t.db");self.p.start()
+        root = Path(self.tmp.name)
+        self.p = patch.multiple(db, DB_PATH=root / "t.db", DATA_DIR=root,
+                                IMPORT_DIR=root / "imports", BACKUP_DIR=root / "backups")
+        self.p.start()
         from app.db import init_db;init_db()
     def tearDown(self):self.p.stop();self.tmp.cleanup()
     def test_dialog_metadata(self):

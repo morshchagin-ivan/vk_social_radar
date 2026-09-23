@@ -14,7 +14,11 @@ class ServiceTests(unittest.TestCase):
 
         from app import db
 
-        self.db_patch = patch.object(db, "DB_PATH", self.db_path)
+        root = Path(self.temp_dir.name)
+        self.db_patch = patch.multiple(
+            db, DB_PATH=self.db_path, DATA_DIR=root,
+            IMPORT_DIR=root / "imports", BACKUP_DIR=root / "backups",
+        )
         self.db_patch.start()
 
         from app.db import init_db

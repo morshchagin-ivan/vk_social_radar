@@ -11,14 +11,22 @@ class V02Tests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         from app import db
-        self.patch = patch.object(db, "DB_PATH", Path(self.tmp.name) / "test.db")
+        root = Path(self.tmp.name)
+        self.patch = patch.multiple(
+            db, DB_PATH=root / "test.db", DATA_DIR=root,
+            IMPORT_DIR=root / "imports", BACKUP_DIR=root / "backups",
+        )
         self.patch.start()
+        from app import importers
+        self.import_patch = patch.object(importers, "IMPORT_DIR", root / "imports")
+        self.import_patch.start()
         from app.db import init_db
         from app.seed import seed_demo_data
         init_db()
         seed_demo_data()
 
     def tearDown(self):
+        self.import_patch.stop()
         self.patch.stop()
         self.tmp.cleanup()
 

@@ -1,6 +1,6 @@
 # Data Model Status
 
-Baseline 1.0 · 2026-09-23. Current physical model comes from [audit read-only schema](01_ARCHITECTURE_INVENTORY.md) and [db.py](../../app/db.py). This iteration does not change/open the DB for application startup or migrations.
+Baseline 1.0 + U02 · 2026-09-23. Current physical model comes from [audit read-only schema](01_ARCHITECTURE_INVENTORY.md), [db.py](../../app/db.py) and [migrations.py](../../app/migrations.py). U02 tested only temporary databases; the working user DB remains unchanged (read-only preflight: version 0, six dialog columns).
 
 ## Current physical model — eight tables
 
@@ -12,12 +12,16 @@ Baseline 1.0 · 2026-09-23. Current physical model comes from [audit read-only s
 | message_stats | per-person period aggregates | mutable upsert, no snapshot scope |
 | app_settings | key/value LM configuration | three editable LM keys, no provider selector |
 | ai_insights | per-person model output/evidence strings | no snapshot/prompt provenance, not RAG citations |
-| collector_dialogs | collected dialog summaries | installed schema differs from code DDL |
+| collector_dialogs | collected dialog summaries | version 1 supports 13 fields; legacy metadata cannot be recovered |
 | import_jobs | filename/status/count/error | no aggregate/run lineage |
 
-## KNOWN P0 DEBT — installed collector_dialogs schema drift
+## RESOLVED in code — collector_dialogs schema drift (U02)
 
-Installed columns at audit: `id, dialog_key, peer_id, full_name, dialog_url, collected_at` (6). Fresh DDL additionally expects `preview, date_label, unread, unread_count, outgoing, avatar_url, verified` (13 total). `services.save_collector_preview` inserts these fields. `CREATE TABLE IF NOT EXISTS` does not add them to an existing table. Fresh temporary DB tests miss this case. U02 remains unimplemented.
+Installed columns at audit: `id, dialog_key, peer_id, full_name, dialog_url, collected_at` (6). Version 1 adds `preview, date_label, unread, unread_count, outgoing, avatar_url, verified` (13 total) with additive ALTERs. `services.save_collector_preview` now succeeds after migration on synthetic legacy data. [U02 tests/report](U02_SCHEMA_MIGRATION_REPORT.md) prove old row/ID preservation, backup, rollback and repeated startup. This resolves the implementation defect; migration was **not applied to the user DB** during this build.
+
+`PRAGMA user_version` is the sole version mechanism: 0 = unversioned, 1 = current. Introspection distinguishes empty, legacy six-column, unversioned thirteen-column, current and unsupported databases. Both recognized existing unversioned shapes receive a SQLite backup before the first mutation (including version adoption); fresh/current databases do not. Version 1 is validated on every startup, future versions fail without mutation.
+
+New optional metadata is NULL. `unread`, `outgoing`, `verified` use the existing runtime DDL's NOT NULL DEFAULT 0 as compatibility sentinels; these zeros **do not prove observed false values** for legacy records. No invented metadata or historical reconstruction. ALTER appends columns after `collected_at`; runtime uses named fields, so physical order need not match fresh DDL.
 
 Audit FK check reported zero violations; this does not certify Snapshot/Run/Graph relations, which do not exist. Generic org operations live in memory with result JSON, not durable CollectorRun/Community tables.
 
@@ -29,8 +33,8 @@ Audit FK check reported zero violations; this does not certify Snapshot/Run/Grap
 
 ## Migration path
 
-1. **U02:** schema versioning and compatible dialogs migration; test preservation, repeatability and failure safety on synthetic legacy data.
+1. **U02 — IMPLEMENTED:** version 0→1, backup before mutation, all DDL/version/defaults in one transaction, required-table/exact-dialog-schema/version/FK validation; 14 new behavior tests PASS.
 2. **U03:** immutable source aggregate and identity/completeness semantics; explicit transformation of legacy relation rows with documented provenance limits. Do not invent missing historical state.
 3. **Subsequent models:** U05 settings contract; U08 local source index/results; U12 persistence seams; U14–U17 only accepted roadmap increments.
 
-Exact next implementation step is U02. No migration or Snapshot implementation occurred in baseline. [Backlog](05_UPGRADE_BACKLOG.md), [debt register](TECHNICAL_DEBT_REGISTER.md).
+Next recommended implementation step is U03. U02 does not make the whole Data Architecture READY and does not implement Snapshot. [Backlog](05_UPGRADE_BACKLOG.md), [debt register](TECHNICAL_DEBT_REGISTER.md).

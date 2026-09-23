@@ -5,6 +5,8 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator
 
+from . import migrations
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
 IMPORT_DIR = DATA_DIR / "imports"
@@ -26,6 +28,9 @@ def get_connection() -> Iterator[sqlite3.Connection]:
     try:
         yield connection
         connection.commit()
+    except BaseException:
+        connection.rollback()
+        raise
     finally:
         connection.close()
 
@@ -123,7 +128,11 @@ def init_db() -> None:
     );
     """
     with get_connection() as conn:
-        conn.executescript(schema)
+        # Guard unsupported databases before taking a write reservation, then
+        # re-detect under the lock so concurrent startups cannot migrate twice.
+        migrations.detect_schema(conn)
+        conn.execute("BEGIN IMMEDIATE")
+        migrations.migrate(conn, schema, DB_PATH, BACKUP_DIR)
         defaults = {
             "lmstudio_base_url": "http://127.0.0.1:1234/v1",
             "lmstudio_model": "",

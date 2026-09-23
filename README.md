@@ -4,7 +4,7 @@
 
 ## Certification Architecture Baseline
 
-Baseline 1.0 · 2026-09-23 · runtime 0.4.2. Git branch/commit недоступны в предоставленной копии. В этой итерации изменена только документация; audit reports сохранены, production-код заморожен.
+Baseline 1.0 · 2026-09-23 · runtime 0.4.2. Защищённый tag `v0.4.2-certification-baseline` указывает на `e34624462fa8ef3cdf56e29ce64cab24aac61411`. Последующее изменение **U02 IMPLEMENTED** добавляет безопасную миграцию SQLite; [отчёт](docs/certification/U02_SCHEMA_MIGRATION_REPORT.md). Исторические audit reports сохранены.
 
 This repository contains a working MVP and a documented target architecture. Target components are never presented as implemented unless confirmed by code and tests.
 
@@ -13,12 +13,13 @@ This repository contains a working MVP and a documented target architecture. Tar
 ## What works today — AS-IS
 
 - Локальные API/UI/SQLite, loopback bind по умолчанию.
+- Schema version 1 (`PRAGMA user_version`): legacy dialogs 6→13 columns, backup перед upgrade, транзакционный откат, повторяемый startup и отказ от future schema.
 - Отдельный persistent Chromium profile и collection friends/followers/dialogs; public organization source API/jobs.
 - Preview перед явным save поддерживаемых friends/followers/dialog kinds. Organization preview пока сохраняется в RAM/JSON и не совместим с общим save-preview.
 - Импорты JSON/CSV/TSV/HTML/ZIP, relation history/diff-like processing, журнал изменений и message aggregates.
 - Прямой LM Studio HTTP client, выбор model/temperature/endpoint и person insight. Это не provider abstraction и не RAG.
 
-Code/wiring подтверждены [аудитом](docs/certification/00_REPOSITORY_AS_IS.md); live VK/LLM не запускались при аудите/baseline. Dialog persistence на установленной БД ограничена known schema drift — [data status](docs/certification/DATA_MODEL_STATUS.md).
+Code/wiring подтверждены [аудитом](docs/certification/00_REPOSITORY_AS_IS.md); live VK/LLM не запускались при аудите/baseline/U02. Dialog persistence после legacy migration подтверждена U02 на временных БД. Рабочая БД во время сборки не мигрировалась — [data status](docs/certification/DATA_MODEL_STATUS.md).
 
 ## Architecture at a glance
 
@@ -34,7 +35,7 @@ Code/wiring подтверждены [аудитом](docs/certification/00_REPO
 
 ## Known limitations
 
-Snapshot semantics имеют same-day/repeated/empty defects; installed collector_dialogs schema отстаёт от DDL. OpenAPI target `/api/v1` не соответствует current `/api`. Repository/DIP/Strategy отсутствуют. Arbitrary LLM endpoint/raw diagnostics/fail-open whitelist мешают строгой privacy guarantee; Git tracked/history проверить нельзя. [Debt register](docs/certification/TECHNICAL_DEBT_REGISTER.md), [API status](docs/certification/API_STATUS.md), [privacy](docs/certification/SECURITY_PRIVACY_STATUS.md).
+Snapshot semantics имеют same-day/repeated/empty defects. U02 исправляет schema drift при startup, но не восстанавливает отсутствующие исторические metadata. OpenAPI target `/api/v1` не соответствует current `/api`. Repository/DIP/Strategy отсутствуют. Arbitrary LLM endpoint/raw diagnostics/fail-open whitelist мешают строгой privacy guarantee; полный privacy audit Git history остаётся U06. [Debt register](docs/certification/TECHNICAL_DEBT_REGISTER.md), [API status](docs/certification/API_STATUS.md), [privacy](docs/certification/SECURITY_PRIVACY_STATUS.md).
 
 ## Verification
 
@@ -42,7 +43,7 @@ Snapshot semantics имеют same-day/repeated/empty defects; installed collect
 
 ## Architecture evolution / backlog
 
-[Evolution stages](docs/certification/ARCHITECTURE_EVOLUTION.md) и [U01–U17 backlog](docs/certification/05_UPGRADE_BACKLOG.md). Следующий рекомендуемый implementation step — U02 migration на синтетической старой схеме. Baseline не начинает migration/Snapshot/API/provider реализацию.
+[Evolution stages](docs/certification/ARCHITECTURE_EVOLUTION.md) и [U01–U17 backlog](docs/certification/05_UPGRADE_BACKLOG.md). U02 завершена; следующий рекомендуемый implementation step — U03 immutable Snapshot, пока PLANNED. Вся Data Architecture не объявляется READY.
 
 ## Running locally
 
@@ -58,7 +59,7 @@ Snapshot semantics имеют same-day/repeated/empty defects; installed collect
 .\.venv\Scripts\python.exe run_server.py
 ```
 
-Адрес: `http://127.0.0.1:8765`, API prefix `/api`. Startup выполняет init_db и demo seed при пустой people; это не read-only команда. В frozen baseline запуск не выполнялся. Не используйте рабочую БД для демонстрации migration/новых функций; текущий drift должен быть закрыт U02. [Dependency-free defense path](docs/certification/DEFENSE_GUIDE.md) не требует запуска приложения.
+Адрес: `http://127.0.0.1:8765`, API prefix `/api`. Startup выполняет init_db (теперь с migration) и demo seed при пустой people; это не read-only команда. U02 build не запускал production startup. Existing unversioned schema сначала получает SQLite backup в `data/backups/schema-v0-to-v1-<UTC>-<unique>.db`, затем upgrade. Backup failure/unsupported schema/future version останавливают startup; данные не заменяются пустой БД. Fresh/current version 1 не создают migration backup. Файлы backup не перезаписываются и не удаляются автоматически; recovery details — [U02 report](docs/certification/U02_SCHEMA_MIGRATION_REPORT.md). [Dependency-free defense path](docs/certification/DEFENSE_GUIDE.md) не требует запуска приложения.
 
 ## Tests
 
@@ -66,9 +67,9 @@ Snapshot semantics имеют same-day/repeated/empty defects; installed collect
 .\run_tests.bat
 ```
 
-Эквивалент: `.venv\Scripts\python.exe -m unittest discover -s tests -v`. Standard runner — **18 unittest**; prior audit отдельно подтвердил **8 existing plain functions** из `tests/test_v043_organization_source.py`. Это не 26 tests стандартного runner. Unified runner/CI — U07; **CI отсутствует**.
+Эквивалент: `.venv\Scripts\python.exe -m unittest discover -s tests -v`. U02 standard runner — **32 unittest PASS**: 14 новых migration + 18 existing. Отдельно выполнены **8 existing plain functions PASS** из `tests/test_v043_organization_source.py`; стандартный runner по-прежнему их не обнаруживает. Unified runner/CI — U07; **CI отсутствует**.
 
-Текущий CSV import test без path isolation может писать `data/imports/friends.csv`; audit использовал temporary DB/storage paths. Baseline не перезапускал tests и не устанавливал pytest/dependencies. [Coverage limits](docs/certification/03_SDD_CODE_GAP_ANALYSIS.md).
+U02 изолирует DB/storage/backup paths новых и существующих DB tests; CSV test также подменяет импортированный `IMPORT_DIR`. Тесты используют temporary directories, не рабочие БД/imports/profile и не VK/LLM/network. Две прежние ResourceWarning в marker tests `test_v031.py` не являются failures и остаются вне U02. Команды и результаты — [U02 report](docs/certification/U02_SCHEMA_MIGRATION_REPORT.md); [historical coverage limits](docs/certification/03_SDD_CODE_GAP_ANALYSIS.md).
 
 ## Existing v0.4.2 notes — Exact Messenger Scroll Container Fix
 

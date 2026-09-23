@@ -2,7 +2,7 @@
 
 Baseline 1.0 · 2026-09-23. Статусы capability: **IMPLEMENTED** — код и wiring подтверждены (уровень тестирования указан отдельно); **PARTIAL** — существует ограниченное подмножество; **PLANNED** — нужный механизм пока отсутствует; **NOT_PLANNED** — не входит в текущую evolution scope. PLANNED не означает implementation in progress.
 
-Источник: [audit inventory](01_ARCHITECTURE_INVENTORY.md), [pattern verdicts](02_PATTERN_INVENTORY.md). Все Uxx ссылаются на неизменённый [upgrade backlog](05_UPGRADE_BACKLOG.md). Immutable Snapshot отмечен PLANNED как aggregate; audit PARTIAL относится только к существующей истории membership, а immutability audit verdict — CONTRADICTED_BY_CODE.
+Источник: [audit inventory](01_ARCHITECTURE_INVENTORY.md), [pattern verdicts](02_PATTERN_INVENTORY.md), [U02 implementation report](U02_SCHEMA_MIGRATION_REPORT.md). Все Uxx ссылаются на [upgrade backlog](05_UPGRADE_BACKLOG.md), обновлённый для U02. Immutable Snapshot отмечен PLANNED как aggregate; audit PARTIAL относится только к существующей истории membership, а immutability audit verdict — CONTRADICTED_BY_CODE.
 
 | Capability / Pattern | Status | AS-IS evidence | Target | Backlog |
 |---|---|---|---|---|
@@ -10,7 +10,8 @@ Baseline 1.0 · 2026-09-23. Статусы capability: **IMPLEMENTED** — ко�
 | Playwright | IMPLEMENTED | [SafeVKCollector.start/collect](../../app/collector.py), API wired; live run не повторён | сохранить web session boundary | [U10](05_UPGRADE_BACKLOG.md) evolution |
 | Separate Chromium profile | IMPLEMENTED | collector.start → launch_persistent_context/user_data_dir; path test v03 | сохранение изоляции, privacy hardening | [U06](05_UPGRADE_BACKLOG.md) evolution |
 | Preview-before-save | IMPLEMENTED | [main.collector_save_preview](../../app/main.py), [services.save_collector_preview](../../app/services.py); friends/followers/dialogs | explicit validated snapshot commit | [U03](05_UPGRADE_BACKLOG.md) evolution |
-| SQLite | IMPLEMENTED | [get_connection/init_db](../../app/db.py), temp DB tests | migration discipline | [U02](05_UPGRADE_BACKLOG.md) evolution |
+| SQLite | IMPLEMENTED | [get_connection/init_db](../../app/db.py), temp DB tests | дальнейшие изменения source model | [U03](05_UPGRADE_BACKLOG.md) evolution |
+| Versioned schema migration | IMPLEMENTED | [migrations](../../app/migrations.py): user_version 0→1, backup, transactional additive 6→13 migration; [14 behavior tests](../../tests/test_migrations.py) PASS | migration foundation; user DB пока не обновлена | [U02](05_UPGRADE_BACKLOG.md) completed |
 | Relation history | PARTIAL | relation_snapshots/date, mutable people | versioned immutable source | [U03](05_UPGRADE_BACKLOG.md) |
 | Diff | PARTIAL | services.import_snapshot set differences; removed assertion | two complete comparable snapshots | [U03](05_UPGRADE_BACKLOG.md) |
 | Timeline | PARTIAL | relation_events/list_changes/person_detail | provenance and stable chronology | [U03/U04](05_UPGRADE_BACKLOG.md) |
