@@ -1,14 +1,14 @@
 # VK Social Radar — Certification Architecture Baseline
 
-**Baseline:** 1.0 · **Date:** 2026-09-23 · **Repository:** `C:\Developments\Javascript\VK` · **Runtime version:** 0.4.2. **Branch / commit:** UNAVAILABLE: предоставленная копия не содержит Git metadata. Название ветки в старом feature plan не считается текущей веткой.
+**Baseline:** 1.0 · **Updated:** 2026-09-24 · **Repository:** `C:\Developments\Javascript\VK` · **Runtime version:** 0.4.2. U03 build uses `certification/architecture-upgrade` on protected U09; exact revisions/tags in the [U03 report](U03_IMMUTABLE_SNAPSHOT_REPORT.md).
 
 This repository contains a working MVP and a documented target architecture. Target components are never presented as implemented unless confirmed by code and tests.
 
-Это документарная baseline-итерация U01 после аудита. Production-код заморожен; U02–U17 не реализовывались. Принятие ADR означает принятие направления, а не готовность кода. Документарная часть U01 подготовлена; Git revision evidence остаётся открытым.
+После documentary U01 реализованы U02 migration, U05 provider, U09 resilience и U03 immutable relation foundation. Принятие остальных ADR не означает готовность кода. Historical audit reports retain their original findings; current status is maintained in the linked status/data/report pages.
 
 ## What is implemented
 
-Python/FastAPI и static HTML/CSS/vanilla JS; SQLite; Playwright с отдельным persistent Chromium profile; friends/followers/dialog collection и public organization source collection; preview перед явным сохранением friends/followers/dialogs; локальные импорты; история связей и diff-like processing; message aggregates; прямой LM Studio HTTP client; loopback bind по умолчанию. Organization source имеет API jobs и JSON preview, но не поддерживается общим save-preview service. Код/wiring подтверждены аудитом; live VK/LLM в нём не запускались.
+Python/FastAPI и static HTML/CSS/vanilla JS; SQLite; Playwright с отдельным persistent Chromium profile; friends/followers/dialog collection и public organization source collection; preview перед явным сохранением friends/followers/dialogs; локальные импорты; immutable relation snapshots и derived diff/events; message aggregates; U05 provider port с LM Studio adapter и U09 resilience; loopback bind по умолчанию. Organization source имеет API jobs и JSON preview, но не поддерживается общим save-preview service. Код/wiring подтверждены аудитом и implementation tests; live VK/LLM не запускались.
 
 - [Current C4](C4_CURRENT.md) — только фактические зависимости.
 - [Architecture Status](ARCHITECTURE_STATUS.md) — статус каждой capability и Uxx.
@@ -16,16 +16,16 @@ Python/FastAPI и static HTML/CSS/vanilla JS; SQLite; Playwright с отдель
 
 ## Target architecture
 
-[Target C4](C4_TARGET.md): immutable source snapshots, migration discipline, contracts, ограниченные persistence/provider ports, заменяемые DOM parsers, локальный retrieval с citations/eval. [Patterns](ARCHITECTURAL_PATTERNS.md) отделяет частичные механизмы от отсутствующих паттернов. Runtime RAG = **NO_RAG**; LLM Provider abstraction, immutable Snapshot aggregate, Retry/Circuit Breaker — **PLANNED**.
+[Target C4](C4_TARGET.md): broader source corpus, contracts, persistence ports, replaceable parsers and evaluated retrieval remain target. [Patterns](ARCHITECTURAL_PATTERNS.md): Provider, immutable relation Snapshot and Retry/Backoff/Jitter/Circuit Breaker are IMPLEMENTED in their tested scope. Message analytics/AI are not snapshot-reproducible; runtime RAG = **NO_RAG**.
 
 Graph, Scheduler, Export — более поздний roadmap U14–U16; vector DB/hybrid/RRF/reranker не являются обязательствами baseline. Существующие target SDD сохранены с banner. [Архив прежнего SDD](../../specs/001-vk-profile-analysis/Artefacts.zip) — неизменённый исторический target bundle; его текст не является implementation evidence. [Feature index](../../specs/001-vk-profile-analysis/README.md) объясняет статус копий и старых задач.
 
 ## Known gaps
 
-[Technical Debt Register](TECHNICAL_DEBT_REGISTER.md) разделяет дефекты и roadmap. Критичны installed DB schema drift, same-day/empty/repeat snapshot semantics, API/OpenAPI mismatch, raw diagnostics и отсутствие проверяемой Git history. Документирование этих проблем не устраняет их.
+[Technical Debt Register](TECHNICAL_DEBT_REGISTER.md) разделяет дефекты и roadmap. U02/U03 resolve schema upgrade and new relation same-day/empty/replay/backdated defects in code. User DB remains unmigrated; legacy history cannot be reconstructed. API/OpenAPI mismatch, privacy hardening, collector completeness and broader message/AI scope remain open.
 
 - [API status](API_STATUS.md): current `/api`, target `/api/v1`, U04.
-- [Data model status](DATA_MODEL_STATUS.md): восемь таблиц и migration U02.
+- [Data model status](DATA_MODEL_STATUS.md): eleven tables, schema v2, immutable relation foundation and preserved legacy history.
 - [Security/privacy](SECURITY_PRIVACY_STATUS.md): local defaults есть, strict guarantees частичны.
 - [NFR baseline](NFR_BASELINE.md): подтверждённые свойства отдельно от предложенных метрик; неизвестные значения TBD.
 
@@ -50,4 +50,4 @@ Audit от 2026-09-23: **18 unittest passed + 8 existing plain functions passed 
 
 Working MVP → Architecture Audit → Known Gaps → ADR → Target Architecture → Prioritized Upgrade Backlog → Controlled Evolution.
 
-[Evolution](ARCHITECTURE_EVOLUTION.md) связывает U01–U13 с acceptance evidence. Следующий рекомендуемый implementation step — **U02: безопасная migration collector_dialogs**, сначала на синтетической копии старой схемы. Он не начат. Для защиты: [Defense Guide](DEFENSE_GUIDE.md), для запуска: [root README](../../README.md).
+[Evolution](ARCHITECTURE_EVOLUTION.md) связывает U01–U13 с acceptance evidence. Latest U03 gate: **117 unittest + 8 additional functions PASS**, no network/user DB writes; [report](U03_IMMUTABLE_SNAPSHOT_REPORT.md). Next recommendation only: **U04 actual API contract**. For operation use [root README](../../README.md); the [Defense Guide](DEFENSE_GUIDE.md) retains baseline-era context.

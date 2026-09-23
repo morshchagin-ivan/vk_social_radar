@@ -1,13 +1,15 @@
 # C4 CURRENT — verified working copy
 
-Baseline 1.0 + U02/U05/U09 · 2026-09-23. AS-IS: один local FastAPI process, static browser UI, SQLite/files и внешние VK web/local inference процессы. Это обзор context/containers с module-level деталями внутри backend, не утверждение об отдельных deployment services.
+Baseline 1.0 + U02/U03/U05/U09 · 2026-09-23. AS-IS: один local FastAPI process, static browser UI, SQLite/files и внешние VK web/local inference процессы. Это обзор context/containers с module-level деталями внутри backend, не утверждение об отдельных deployment services.
 
 ```mermaid
 flowchart LR
   User["User"] --> UI["Static Web UI - HTML CSS vanilla JS"]
   UI --> API["FastAPI - main.py"]
   API --> Services["services.py - SQL and business functions"]
-  Services --> DB[("Local SQLite")]
+  Services --> DB[("Local SQLite v2")]
+  Services --> Snapshots["snapshots.py - immutable relation source and derived events"]
+  Snapshots --> DB
   API --> Imports["importers.py"]
   Imports --> Services
   Imports --> DB
@@ -43,10 +45,12 @@ Configured endpoint — configuration boundary к LM Studio по умолчан�
 | Preview/save | collect возвращает preview; save-preview вызывает service | main.collector_save_preview, services.save_collector_preview; [audit](01_ARCHITECTURE_INVENTORY.md) |
 | AI | person_detail → AIInsightService → LLMProvider → ResilientLLMProvider → LMStudioProvider; local validation before ai_insights | [service](../../app/ai/service.py), [port](../../app/ai/provider.py), [wrapper](../../app/ai/resilience.py), [adapter](../../app/ai/providers/lmstudio.py), [composition](../../app/ai/composition.py); [U05](U05_LLM_PROVIDER_REPORT.md)/[U09 evidence](U09_LLM_RESILIENCE_REPORT.md) |
 
-Friends/followers save преобразуется в relation rows по дню; dialogs save — в collector_dialogs. U02 предоставляет migration старой схемы; пользовательская DB не мигрировалась во время сборок. Organization-source result находится в памяти/JSON; общий save-preview его не поддерживает. Jobs volatile; startup вызывает init_db/demo seed. В отдельные nodes не вынесены все вспомогательные функции — это не отсутствие соответствующего кода.
+Friends/followers collector save сохраняет UNKNOWN/INCOMPLETE observation; declared manual/file relation imports создают COMPLETE v2 snapshots; dialogs save — в collector_dialogs. U02 предоставляет migration старой схемы; пользовательская DB не мигрировалась во время сборок. Organization-source result находится в памяти/JSON; общий save-preview его не поддерживает. Jobs volatile; startup вызывает init_db/demo seed. В отдельные nodes не вынесены все вспомогательные функции — это не отсутствие соответствующего кода.
 
 U05 реализует DIP только на AI/provider boundary; global DIP PARTIAL. SQL persistence остаётся прямой. `app/lmstudio.py` — compatibility facade для прежних Python callers, production API его не импортирует. Models и connection test используют тот же provider port; test проверяет discovery, не inference readiness. U09 реализует Retry/Exponential Backoff/Full Jitter/Circuit Breaker для generation. Models проходят один раз без retry/state changes; auto-model selection может вызвать discovery даже при OPEN generation. Ollama/fallback отсутствуют.
 
 Composition хранит одну active endpoint binding на процесс: breaker живёт между API requests; смена endpoint заменяет binding, model/temperature её не сбрасывают. CLOSED: максимум 3 attempts, max retry sleep 1.5s; threshold 3 logical failures; recovery 30s, один HALF_OPEN attempt. Состояние защищено Lock, transport/sleep вне lock. 8/120s transport timeouts сохранены; total deadline НЕ enforced.
 
-Здесь нет React, Scheduler, RAG, AI Worker, Social Graph, Repository, Kafka или Redis. Non-AI analytics не читает VK напрямую, но **не** опирается на immutable Snapshot aggregate. Код и wiring исследованы, live VK/LLM не запускались. [Target](C4_TARGET.md), [gaps](TECHNICAL_DEBT_REGISTER.md), [audit](00_REPOSITORY_AS_IS.md).
+Здесь нет React, Scheduler, RAG, AI Worker, Social Graph, Repository, Kafka или Redis. Non-AI analytics не читает VK напрямую, использует COMPLETE v2 snapshots для current relation counts; message analytics остаётся period-based и не snapshot-scoped. Код и wiring исследованы, live VK/LLM не запускались. [Target](C4_TARGET.md), [gaps](TECHNICAL_DEBT_REGISTER.md), [audit](00_REPOSITORY_AS_IS.md).
+
+U03 adds snapshots/snapshot_people/snapshot_events and a nullable namespaced people.snapshot_key. Complete source rows are immutable; events are derived and can be repaired after backdated insertion. Order: captured_at then insertion sequence, date-only input retained with date precision. Per-stream legacy fallback stops at the first COMPLETE v2 capture. New event names/URLs come from frozen membership, legacy events remain labelled legacy_unknown. [U03 evidence](U03_IMMUTABLE_SNAPSHOT_REPORT.md).

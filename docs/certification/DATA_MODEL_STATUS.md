@@ -1,40 +1,41 @@
 # Data Model Status
 
-Baseline 1.0 + U02 · 2026-09-23. Current physical model comes from [audit read-only schema](01_ARCHITECTURE_INVENTORY.md), [db.py](../../app/db.py) and [migrations.py](../../app/migrations.py). U02 tested only temporary databases; the working user DB remains unchanged (read-only preflight: version 0, six dialog columns).
+2026-09-24 · U02/U03 current physical schema **v2**. [U03 evidence](U03_IMMUTABLE_SNAPSHOT_REPORT.md), [DDL](../../app/snapshot_schema.py), [migration](../../app/migrations.py). Tests used temporary databases; the working user database was not migrated.
 
-## Current physical model — eight tables
+## Physical model — eleven tables
 
-| Table | Actual responsibility | Important limit |
+| Table | Responsibility | Boundary |
 |---|---|---|
-| people | mutable person identity/name/URLs | no historical attribute version |
-| relation_snapshots | person/type/date membership | no snapshot header; only friend/follower; empty state cannot be represented |
-| relation_events | relation changes journal | no snapshot FK; duplicate/mutable event semantics |
-| message_stats | per-person period aggregates | mutable upsert, no snapshot scope |
-| app_settings | key/value LM configuration | three editable LM keys, no provider selector |
-| ai_insights | per-person model output/evidence strings | no snapshot/prompt provenance, not RAG citations |
-| collector_dialogs | collected dialog summaries | version 1 supports 13 fields; legacy metadata cannot be recovered |
-| import_jobs | filename/status/count/error | no aggregate/run lineage |
+| snapshots | UUID identity, sequence tie-break, captured_at/precision, relation stream, source/reference, status/completeness, item_count, domain_version, created_at | immutable after finalization; COMPLETE requires declared completeness and exact membership count |
+| snapshot_people | frozen external identity, numeric VK ID if known, name/profile/avatar, optional current person reference | historical reads do not join mutable people for attributes; membership immutable after finalization |
+| snapshot_events | derived membership changes with from/to IDs and historical projection reference | UNIQUE pair/type/identity; rebuild affected edges on backdated insertion; not Event Sourcing |
+| people | mutable convenience/person/message projection; nullable UNIQUE snapshot_key added | namespaced vk:/screen: linkage for new captures; not historical truth |
+| relation_snapshots | preserved legacy person/type/date membership | no invented run ID/completeness; fallback only before first COMPLETE v2 capture per stream |
+| relation_events | preserved legacy journal | labelled legacy_unknown; original historical name/completeness cannot be reconstructed |
+| message_stats | mutable per-person period aggregates | no snapshot scope |
+| app_settings | existing key/value LM configuration | unchanged |
+| ai_insights | existing per-person output | no snapshot/prompt provenance or retrieval citations; RAG NO_RAG |
+| collector_dialogs | existing 13-field dialog summaries | U02 compatibility preserved; outside immutable relation aggregate |
+| import_jobs | existing import status/files/count | real job/file reference may be recorded; not a fabricated CollectorRun |
 
-## RESOLVED in code — collector_dialogs schema drift (U02)
+UUID identity is independent of date. Sequence is a stable database insertion tie-break. Date-only input remains a date string with date precision and sorts before timestamped captures on that date. Timestamp input normalizes to UTC; old offset-free preview timestamps follow the application local-time convention. Missing upstream time defaults to import acceptance time, not a claimed VK observation time. Streams are friend/follower; no account/tenant dimension is invented.
 
-Installed columns at audit: `id, dialog_key, peer_id, full_name, dialog_url, collected_at` (6). Version 1 adds `preview, date_label, unread, unread_count, outgoing, avatar_url, verified` (13 total) with additive ALTERs. `services.save_collector_preview` now succeeds after migration on synthetic legacy data. [U02 tests/report](U02_SCHEMA_MIGRATION_REPORT.md) prove old row/ID preservation, backup, rollback and repeated startup. This resolves the implementation defect; migration was **not applied to the user DB** during this build.
+Lifecycle: CREATING → COMPLETE / INCOMPLETE / FAILED. Drafts never become current. Finalized rows cannot be promoted or modified; corrected captures get new IDs. Manual/CSV/JSON imports declare replacement sets, including explicit []. Missing people is rejected. Collector and HTML extraction cannot prove full coverage and remain UNKNOWN/INCOMPLETE. Unexpected persistence/derivation failure rolls back the whole operation.
 
-`PRAGMA user_version` is the sole version mechanism: 0 = unversioned, 1 = current. Introspection distinguishes empty, legacy six-column, unversioned thirteen-column, current and unsupported databases. Both recognized existing unversioned shapes receive a SQLite backup before the first mutation (including version adoption); fresh/current databases do not. Version 1 is validated on every startup, future versions fail without mutation.
+## Migration and legacy policy
 
-New optional metadata is NULL. `unread`, `outgoing`, `verified` use the existing runtime DDL's NOT NULL DEFAULT 0 as compatibility sentinels; these zeros **do not prove observed false values** for legacy records. No invented metadata or historical reconstruction. ALTER appends columns after `collected_at`; runtime uses named fields, so physical order need not match fresh DDL.
+PRAGMA user_version remains the sole marker. v1→v2 adds three tables, indexes, immutability triggers and nullable people.snapshot_key. All existing rows/IDs/values are preserved; no legacy backfill. Recognized v0 receives the U02 dialog columns and v2 foundation in one transaction. Fresh initialization finishes at v2. Future versions fail closed; current schema drift is not silently repaired.
 
-Audit FK check reported zero violations; this does not certify Snapshot/Run/Graph relations, which do not exist. Generic org operations live in memory with result JSON, not durable CollectorRun/Community tables.
+Existing supported upgrades first create SQLite backups, including committed WAL: `schema-v<from>-to-v2-<UTC>-<UUID>.db`. Backup refusal prevents mutation. DDL, validation, version and defaults share the transaction. Three repeat v2 initializations produce no changes/extra backups. Snapshot schema objects and FK integrity are checked; U02 exact dialog-column/unique-key checks remain.
 
-## Target logical model
+Legacy tables remain compatibility history and are never declared COMPLETE v2. The first COMPLETE establishes a new baseline; no legacy→v2 removal events are invented. Thereafter current counts use latest COMPLETE v2, including empty, regardless of legacy dates. New events render frozen source fields; legacy events retain unknown provenance and mutable presentation limitations.
 
-[ADR-003](../adr/ADR-003-immutable-snapshot-source-of-truth.md): CollectionRun → Immutable Snapshot with source items/completeness/schema version; separate source-linked Diff/Timeline/Analytics. [ADR-004](../adr/ADR-004-local-llm-provider-abstraction.md)/[ADR-006](../adr/ADR-006-rag-architecture.md): provider config and source-linked AI results/retrieval index. Graph/Export models follow only with U15/U16.
+## Derived data and reads
 
-[Root ER](../../10_DATA_MODEL.md) and [feature model](../../specs/001-vk-profile-analysis/data-model.md) are historical logical proposals, not SQLite DDL. UUID IDs, Embedding entity and all listed tables are not thereby approved physical schema. U03/U08 choose the minimum model necessary to satisfy the accepted ADRs.
+Order: (captured_at, sequence) within friend/follower, excluding non-COMPLETE. A backdated B between A/C atomically derives A→B and replaces obsolete A→C with B→C. Source membership/projection never changes. Pair replay uses DB uniqueness and retains unchanged event IDs. Explicit pair diff reads only those two immutable sets.
 
-## Migration path
+Dashboard relation counts, list_people flags and new timeline/person-detail events use v2 truth. People remain mutable convenience records; messages and AI retain existing period/current semantics. Full FR-2 corpus/lifecycle, attribute/activity diff, snapshot browser/export/retention and source-linked AI/RAG remain target. [Logical target](../../10_DATA_MODEL.md) is not current SQLite DDL.
 
-1. **U02 — IMPLEMENTED:** version 0→1, backup before mutation, all DDL/version/defaults in one transaction, required-table/exact-dialog-schema/version/FK validation; 14 new behavior tests PASS.
-2. **U03:** immutable source aggregate and identity/completeness semantics; explicit transformation of legacy relation rows with documented provenance limits. Do not invent missing historical state.
-3. **Subsequent models:** U05 settings contract; U08 local source index/results; U12 persistence seams; U14–U17 only accepted roadmap increments.
+## Evidence
 
-Next recommended implementation step is U03. U02 does not make the whole Data Architecture READY and does not implement Snapshot. [Backlog](05_UPGRADE_BACKLOG.md), [debt register](TECHNICAL_DEBT_REGISTER.md).
+34 new U03 + 14 U02 + 26 U05 + 25 U09 + 18 existing = **117 unittest PASS**; 8 additional functions PASS. Fresh/migrated FK checks, preservation/backup/refusal/rollback, drift rejection, immutability, replay/concurrency, same-day/empty/backdated cases and incomplete exclusion use synthetic data. No network or user database writes. [Report](U03_IMMUTABLE_SNAPSHOT_REPORT.md).

@@ -3,12 +3,14 @@ from __future__ import annotations
 from datetime import date, timedelta
 
 from .db import get_connection
+from .snapshots import create_snapshot
 
 
 def seed_demo_data() -> None:
     with get_connection() as conn:
         existing = conn.execute("SELECT COUNT(*) AS count FROM people").fetchone()["count"]
-        if existing:
+        # A valid empty or incomplete v2 capture is user history too.
+        if existing or conn.execute("SELECT 1 FROM snapshots LIMIT 1").fetchone():
             return
 
         people = [
@@ -41,36 +43,14 @@ def seed_demo_data() -> None:
         previous_followers = ["Дмитрий Лебедев"]
         current_followers = ["Иван Крылов", "Ольга Соколова"]
 
-        for name in previous_friends:
-            conn.execute(
-                "INSERT INTO relation_snapshots(person_id, relation_type, snapshot_date) VALUES (?, 'friend', ?)",
-                (ids[name], previous.isoformat()),
-            )
-        for name in current_friends:
-            conn.execute(
-                "INSERT INTO relation_snapshots(person_id, relation_type, snapshot_date) VALUES (?, 'friend', ?)",
-                (ids[name], today.isoformat()),
-            )
-        for name in previous_followers:
-            conn.execute(
-                "INSERT INTO relation_snapshots(person_id, relation_type, snapshot_date) VALUES (?, 'follower', ?)",
-                (ids[name], previous.isoformat()),
-            )
-        for name in current_followers:
-            conn.execute(
-                "INSERT INTO relation_snapshots(person_id, relation_type, snapshot_date) VALUES (?, 'follower', ?)",
-                (ids[name], today.isoformat()),
-            )
-
-        events = [
-            (ids["Дмитрий Лебедев"], "friend_added", today.isoformat(), "Добавлен в друзья"),
-            (ids["Иван Крылов"], "friend_to_follower", today.isoformat(), "Удалился из друзей, остался подписчиком"),
-            (ids["Ольга Соколова"], "friend_to_follower", today.isoformat(), "Удалился из друзей, остался подписчиком"),
-        ]
-        conn.executemany(
-            "INSERT INTO relation_events(person_id, event_type, event_date, details) VALUES (?, ?, ?, ?)",
-            events,
-        )
+        for relation, day, names in (
+            ("friend", previous, previous_friends), ("friend", today, current_friends),
+            ("follower", previous, previous_followers), ("follower", today, current_followers),
+        ):
+            create_snapshot({"relation_type": relation, "snapshot_date": day.isoformat(),
+                "source": "synthetic_demo", "people": [
+                    dict(vk_id=row[0], full_name=row[1], profile_url=row[2], avatar_url=row[3])
+                    for row in people if row[1] in names]}, conn=conn)
 
         period_end = today
         period_start = today - timedelta(days=29)

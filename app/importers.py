@@ -83,7 +83,8 @@ def _rows_from_file(filename: str, content: bytes) -> Any:
     if suffix in {".csv", ".tsv"}:
         return _parse_csv(content)
     if suffix in {".html", ".htm"}:
-        return _extract_vk_users_from_html(content)
+        # Anchor extraction is an observation, not evidence of a complete relation list.
+        return {"people": _extract_vk_users_from_html(content), "completeness": "UNKNOWN"}
     raise ValueError(f"Неподдерживаемый формат: {suffix}")
 
 
@@ -108,10 +109,10 @@ def import_uploaded_file(
 
     try:
         if safe_name.lower().endswith(".zip"):
-            result = _import_zip(content, import_type, relation_type, snapshot_date)
+            result = _import_zip(content, import_type, relation_type, snapshot_date, f"import_job:{job_id}:{safe_name}")
         else:
             rows = _rows_from_file(safe_name, content)
-            result = _dispatch(rows, import_type, relation_type, snapshot_date)
+            result = _dispatch(rows, import_type, relation_type, snapshot_date, f"import_job:{job_id}:{safe_name}")
 
         imported_rows = int(result.get("count") or result.get("imported") or 0)
         with get_connection() as conn:
@@ -136,6 +137,7 @@ def _import_zip(
     import_type: str,
     relation_type: str | None,
     snapshot_date: str | None,
+    source_reference: str | None = None,
 ) -> dict[str, Any]:
     imported = 0
     processed = []
@@ -147,7 +149,7 @@ def _import_zip(
             if suffix not in {".json", ".csv", ".tsv", ".html", ".htm"}:
                 continue
             rows = _rows_from_file(info.filename, archive.read(info))
-            result = _dispatch(rows, import_type, relation_type, snapshot_date)
+            result = _dispatch(rows, import_type, relation_type, snapshot_date, f"{source_reference}!{info.filename}")
             imported += int(result.get("count") or result.get("imported") or 0)
             processed.append(info.filename)
     if not processed:
@@ -160,9 +162,11 @@ def _dispatch(
     import_type: str,
     relation_type: str | None,
     snapshot_date: str | None,
+    source_reference: str | None = None,
 ) -> dict[str, Any]:
+    metadata = payload if isinstance(payload, dict) else {}
     if isinstance(payload, dict):
-        payload = payload.get("people") or payload.get("items") or payload.get("messages") or [payload]
+        payload = next((payload[key] for key in ("people", "items", "messages") if key in payload), [payload])
 
     if not isinstance(payload, list):
         raise ValueError("Ожидался массив записей")
@@ -174,8 +178,12 @@ def _dispatch(
         return import_snapshot(
             {
                 "relation_type": relation_type,
-                "snapshot_date": snapshot_date or date.today().isoformat(),
+                "snapshot_date": snapshot_date or metadata.get("snapshot_date") or date.today().isoformat(),
                 "people": people,
+                "captured_at": metadata.get("captured_at"),
+                "completeness": metadata.get("completeness", "DECLARED_COMPLETE"),
+                "status": metadata.get("status"),
+                "source": "file_import", "source_reference": source_reference,
             }
         )
 

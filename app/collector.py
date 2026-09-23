@@ -649,7 +649,9 @@ class SafeVKCollector:
 
             preview = {
                 "kind": kind,
-                "collected_at": datetime.now().isoformat(timespec="seconds"),
+                "collected_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+                "snapshot_id": str(uuid4()),
+                "completeness": "UNKNOWN",
                 "source_url": self.page.url,
                 "count": len(items),
                 "items": items,

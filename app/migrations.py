@@ -1,4 +1,4 @@
-"""SQLite schema v1: additive dialog metadata, with a pre-upgrade backup.
+"""SQLite versions 0 -> 1 (dialogs) -> 2 (immutable relation snapshots).
 
 The caller owns the transaction (including default settings). Never use
 executescript here: it can commit a pending transaction before executing DDL.
@@ -11,7 +11,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
 
-CURRENT_SCHEMA_VERSION = 1
+from . import snapshot_schema
+
+CURRENT_SCHEMA_VERSION = 2
 EXPECTED_TABLES = frozenset({
     "people", "relation_snapshots", "relation_events", "message_stats",
     "app_settings", "ai_insights", "collector_dialogs", "import_jobs",
@@ -64,6 +66,8 @@ def detect_schema(conn: sqlite3.Connection) -> str:
         raise SchemaMigrationError(f"Unsupported database schema version {version}")
     if version == CURRENT_SCHEMA_VERSION:
         return "current"
+    if version == 1:
+        return "version_1"
     objects = conn.execute(
         "SELECT name FROM sqlite_master WHERE name NOT GLOB 'sqlite_*'"
     ).fetchall()
@@ -85,7 +89,9 @@ def backup_database(db_path: Path, backup_dir: Path) -> Path:
     (which can block), while the reservation prevents competing writers.
     """
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
-    backup_path = backup_dir / f"schema-v0-to-v1-{stamp}-{uuid4().hex}.db"
+    with closing(sqlite3.connect(db_path.resolve().as_uri() + "?mode=ro", uri=True)) as source:
+        version = source.execute("PRAGMA user_version").fetchone()[0]
+    backup_path = backup_dir / f"schema-v{version}-to-v{CURRENT_SCHEMA_VERSION}-{stamp}-{uuid4().hex}.db"
     try:
         backup_dir.mkdir(parents=True, exist_ok=True)
         with backup_path.open("xb"):
@@ -102,7 +108,7 @@ def backup_database(db_path: Path, backup_dir: Path) -> Path:
     return backup_path
 
 
-def validate_schema(conn: sqlite3.Connection) -> None:
+def validate_schema(conn: sqlite3.Connection, *, snapshots: bool = True) -> None:
     tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
     if not EXPECTED_TABLES <= tables:
         raise SchemaMigrationError("Database schema is missing required tables")
@@ -120,13 +126,20 @@ def validate_schema(conn: sqlite3.Connection) -> None:
         raise SchemaMigrationError("Database collector_dialogs uniqueness constraint is missing")
     if conn.execute("PRAGMA foreign_key_check").fetchone() is not None:
         raise SchemaMigrationError("Database foreign key validation failed")
+    if snapshots:
+        try:
+            snapshot_schema.validate_schema(conn)
+        except ValueError as exc:
+            raise SchemaMigrationError(str(exc)) from exc
 
 
 def migrate(conn: sqlite3.Connection, schema: str, db_path: Path, backup_dir: Path) -> None:
     if not conn.in_transaction:
         raise SchemaMigrationError("Schema migration requires an explicit transaction")
     state = detect_schema(conn)
-    if state in {"legacy_dialogs", "unversioned_current"}:
+    if state == "version_1":
+        validate_schema(conn, snapshots=False)
+    if state in {"legacy_dialogs", "unversioned_current", "version_1"}:
         backup_database(db_path, backup_dir)
     if state == "legacy_dialogs":
         # Unknown metadata stays NULL. Zero flags are compatibility sentinels
@@ -138,6 +151,9 @@ def migrate(conn: sqlite3.Connection, schema: str, db_path: Path, backup_dir: Pa
         for statement in schema.split(";"):
             if statement.strip():
                 conn.execute(statement)
+        # An unversioned v2-shaped DB can be adopted only after exact validation.
+        if not conn.execute("SELECT 1 FROM sqlite_master WHERE name='snapshots'").fetchone():
+            snapshot_schema.create_schema(conn)
     validate_schema(conn)
     if state != "current":
         conn.execute(f"PRAGMA user_version = {CURRENT_SCHEMA_VERSION}")

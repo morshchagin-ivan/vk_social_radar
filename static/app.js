@@ -134,7 +134,8 @@ document.querySelector("#collector-save").onclick=async function(){
   const old=this.textContent;this.disabled=true;this.innerHTML='<span class="spinner"></span>';
   try{
     const r=await api("/api/collector/save-preview",{method:"POST"});
-    document.querySelector("#collector-report").insertAdjacentHTML("beforeend",`<p class="positive"><strong>Сохранено:</strong> ${esc(JSON.stringify(r))}</p>`);
+    const notice=r.status==="INCOMPLETE"?"Наблюдение сохранено. Полнота не подтверждена; текущие связи не изменены.":"Сохранено:";
+    document.querySelector("#collector-report").insertAdjacentHTML("beforeend",`<p><strong>${esc(notice)}</strong> ${esc(JSON.stringify(r))}</p>`);
     await refreshAll();
   }catch(e){alert(e.message)}finally{this.textContent=old;this.disabled=false;}
 };

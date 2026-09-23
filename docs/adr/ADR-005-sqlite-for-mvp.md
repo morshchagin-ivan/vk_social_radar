@@ -38,4 +38,4 @@ Local DB не означает автоматическое шифрование
 
 ## Evolution path
 
-Следующая рекомендуемая implementation iteration — U03; U02 завершена. U11 измерит growth/recovery/concurrency. PostgreSQL рассматривается только после изменения requirements/measurement evidence.
+U02 и [U03 relation foundation](../certification/U03_IMMUTABLE_SNAPSHOT_REPORT.md) завершены. Current schema v2 adds snapshots/snapshot_people/snapshot_events and nullable people.snapshot_key, preserving legacy rows. v1→v2 and supported v0→v2 use pre-change backups and one transaction; startup validates source guards/indexes and FK integrity. Historical U02 evidence above describes its original v1 milestone. Next recommendation: U04. U11 измерит growth/recovery/concurrency; PostgreSQL только после изменения requirements/measurement evidence.

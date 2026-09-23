@@ -2,6 +2,8 @@
 > This document describes intended architecture and is not evidence that every component is implemented.
 > Verified AS-IS: [docs/certification/C4_CURRENT.md](docs/certification/C4_CURRENT.md).
 > Implementation status: [docs/certification/ARCHITECTURE_STATUS.md](docs/certification/ARCHITECTURE_STATUS.md).
+>
+> **U03 current scope (2026-09-24):** immutable friend/follower snapshots are implemented, with frozen membership/person fields and derived adjacent-pair events. Current physical lifecycle is CREATING → COMPLETE / INCOMPLETE / FAILED; only declared COMPLETE sets become current. Collector/HTML observations remain incomplete. The broader full-corpus models/flows below remain TARGET, not current code; message_stats/AI are not snapshot-reproducible, and no Event Sourcing, automatic AI or Repository framework was added. [U03 model/flow/evidence](docs/certification/U03_IMMUTABLE_SNAPSHOT_REPORT.md).
 
 # 10_DATA_MODEL.md
 

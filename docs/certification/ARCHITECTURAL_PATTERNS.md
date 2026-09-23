@@ -7,8 +7,8 @@ Baseline 1.0 + U05/U09 · 2026-09-23. Status starts from the historical [audit v
 | Local-first | PARTIAL | local control/privacy | local bind/files/SQLite; arbitrary LLM URL | enforced local inference/privacy | [ADR-001](../adr/ADR-001-local-first-architecture.md); U06 |
 | Adapter | IMPLEMENTED for LM Studio; PARTIAL elsewhere | isolate external protocols | LMStudioProvider implements LLMProvider, owns HTTP/extraction/errors; browser/file wrappers remain concrete | browser/persistence adapters still planned | [LM adapter](../../app/ai/providers/lmstudio.py), [contract tests](../../tests/test_ai_provider.py); U05 completed / U10/U12 planned |
 | ACL | PARTIAL | external DOM/raw→internal data | cleaners and dict normalization | typed identity/result boundary | [importers](../../app/importers.py); U10/U13 |
-| Pipeline | PARTIAL | staged transformation | collect→preview→manual save; import→normalize→SQL/diff; AI separate | validated run→snapshot→derived data→retrieval | [services](../../app/services.py); U03/U08 |
-| Immutable Snapshot | PARTIAL history; immutability CONTRADICTED_BY_CODE | reproducible history | daily memberships and mutable people | PLANNED immutable aggregate | [ADR-003](../adr/ADR-003-immutable-snapshot-source-of-truth.md); U03 |
+| Pipeline | PARTIAL | staged transformation | collect→preview→INCOMPLETE observation; declared import→atomic COMPLETE source→derived pair events; AI separate | validated run→snapshot→derived data→retrieval | [services](../../app/services.py); U03/U08 |
+| Immutable Snapshot | IMPLEMENTED for relations | reproducible friend/follower history | UUID header + immutable snapshot_people projection; SQLite guards; COMPLETE-only current | broader corpus remains planned | [ADR-003](../adr/ADR-003-immutable-snapshot-source-of-truth.md), [U03 evidence](U03_IMMUTABLE_SNAPSHOT_REPORT.md); U03 completed |
 | Repository | NOT_IMPLEMENTED | persistence boundary | direct SQL, connection helper is not repository | PLANNED selected persistence ports | [services](../../app/services.py); U12 |
 | DIP | IMPLEMENTED at AI provider boundary only | business independence from vendor transport | AIInsightService accepts LLMProvider; structural fake works without adapter inheritance; composition binds LM Studio | persistence ports PLANNED; no global DIP claim | [service](../../app/ai/service.py), [composition](../../app/ai/composition.py); U05 completed / U12 planned |
 | Strategy | NOT_IMPLEMENTED | replace parser independently | hardcoded kind branch and methods | PLANNED parser contract/registry or injection | [collector.collect](../../app/collector.py); U10 |
@@ -42,3 +42,5 @@ The requested list contains infrastructure technologies as well as architectural
 | Federated Learning | no model training over distributed user datasets |
 
 [ADR rationale](../adr/README.md), [NFR](NFR_BASELINE.md), [U01–U17](05_UPGRADE_BACKLOG.md). Reconsider these choices only on changed requirements or measured constraints.
+
+U03 uses immutable state snapshots with derived, rebuildable membership diffs/events. It is **not Event Sourcing**. Mutable people remain convenience/current records; message_stats, AI inputs and legacy event names remain outside immutable reproduction. 34 U03 behavior/migration tests PASS.

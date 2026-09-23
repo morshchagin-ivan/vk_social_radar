@@ -66,7 +66,7 @@ class MigrationTests(unittest.TestCase):
 
     def assert_current(self):
         with closing(sqlite3.connect(self.path)) as conn:
-            self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], 1)
+            self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], migrations.CURRENT_SCHEMA_VERSION)
             columns = {row[1]: row for row in conn.execute("PRAGMA table_info(collector_dialogs)")}
             self.assertEqual(set(columns), EXPECTED_FIELDS)
             for field in ("unread", "outgoing", "verified"):
@@ -97,7 +97,7 @@ class MigrationTests(unittest.TestCase):
         self.assertEqual(self.rows(), LEGACY_ROWS)
         backups = self.backup_files()
         self.assertEqual(len(backups), 1)
-        self.assertTrue(backups[0].name.startswith("schema-v0-to-v1-"))
+        self.assertTrue(backups[0].name.startswith("schema-v0-to-v2-"))
         self.assertEqual(self.rows(backups[0]), LEGACY_ROWS)
         with closing(sqlite3.connect(backups[0])) as conn:
             self.assertEqual((conn.execute("PRAGMA user_version").fetchone()[0], list(conn.iterdump())), before)
@@ -179,7 +179,7 @@ class MigrationTests(unittest.TestCase):
         with closing(sqlite3.connect(self.path)) as conn:
             conn.execute("PRAGMA user_version = 99")
         before = self.path.read_bytes()
-        with self.assertRaisesRegex(migrations.SchemaMigrationError, "version 99 is newer than supported 1"):
+        with self.assertRaisesRegex(migrations.SchemaMigrationError, "version 99 is newer than supported 2"):
             db.init_db()
         self.assertEqual(self.path.read_bytes(), before)
         self.assertEqual(self.backup_files(), [])
