@@ -2,7 +2,7 @@
 
 Baseline 1.0 · 2026-09-23. Статусы capability: **IMPLEMENTED** — код и wiring подтверждены (уровень тестирования указан отдельно); **PARTIAL** — существует ограниченное подмножество; **PLANNED** — нужный механизм пока отсутствует; **NOT_PLANNED** — не входит в текущую evolution scope. PLANNED не означает implementation in progress.
 
-Источник: [audit inventory](01_ARCHITECTURE_INVENTORY.md), [pattern verdicts](02_PATTERN_INVENTORY.md), [U02 report](U02_SCHEMA_MIGRATION_REPORT.md), [U05 report](U05_LLM_PROVIDER_REPORT.md). Все Uxx ссылаются на [upgrade backlog](05_UPGRADE_BACKLOG.md), обновлённый для U02/U05. Immutable Snapshot отмечен PLANNED как aggregate; audit PARTIAL относится только к существующей истории membership, а immutability audit verdict — CONTRADICTED_BY_CODE.
+Источник: [audit inventory](01_ARCHITECTURE_INVENTORY.md), [pattern verdicts](02_PATTERN_INVENTORY.md), [U02 report](U02_SCHEMA_MIGRATION_REPORT.md), [U05 report](U05_LLM_PROVIDER_REPORT.md), [U09 report](U09_LLM_RESILIENCE_REPORT.md). Все Uxx ссылаются на [upgrade backlog](05_UPGRADE_BACKLOG.md), обновлённый для U02/U05/U09. Immutable Snapshot отмечен PLANNED как aggregate; audit PARTIAL относится только к существующей истории membership, а immutability audit verdict — CONTRADICTED_BY_CODE.
 
 | Capability / Pattern | Status | AS-IS evidence | Target | Backlog |
 |---|---|---|---|---|
@@ -18,8 +18,8 @@ Baseline 1.0 · 2026-09-23. Статусы capability: **IMPLEMENTED** — ко�
 | Analytics | PARTIAL | dashboard/message_leaderboard SQL; tests | consistent period/snapshot scope | [U03/U16](05_UPGRADE_BACKLOG.md) |
 | LM Studio adapter | IMPLEMENTED | [LMStudioProvider](../../app/ai/providers/lmstudio.py): HTTP mapping, 8/120s timeouts, normalized errors; mock contract tests PASS; no live inference proof | сохранить contract при evolution | [U05](05_UPGRADE_BACKLOG.md) completed |
 | LLM Provider abstraction | IMPLEMENTED | [LLMProvider Protocol](../../app/ai/provider.py), typed contracts, [composition](../../app/ai/composition.py), fake substitution and local validation PASS | only LM Studio bound; Ollama NOT IMPLEMENTED | [U05](05_UPGRADE_BACKLOG.md) completed |
-| Retry/backoff/jitter | PLANNED | только HTTP timeout, retry отсутствует | bounded policy, accepted NFR | [U09/U11](05_UPGRADE_BACKLOG.md) |
-| Circuit Breaker | PLANNED | только try/except → 503 | stateful gate subject to NFR | [U09/U11](05_UPGRADE_BACKLOG.md) |
+| Retry / Exponential Backoff / Jitter | IMPLEMENTED | [ResilientLLMProvider](../../app/ai/resilience.py): generation only, 3 attempts, capped exponential full jitter, max sleep 1.5s; RES-001…007 PASS | total deadline NOT enforced; measured NFR pending U11 | [U09](05_UPGRADE_BACKLOG.md) completed |
+| Circuit Breaker | IMPLEMENTED | shared per-process generation gate: CLOSED/OPEN/HALF_OPEN, 3 logical failures, 30s recovery, one probe, Lock; CB-001…010 PASS | no distributed state; discovery independent | [U09](05_UPGRADE_BACKLOG.md) completed |
 | Immutable Snapshot aggregate | PLANNED | relation rows не immutable aggregate; audit defects | header/items/completeness/run/version | [U03](05_UPGRADE_BACKLOG.md) |
 | Repository | PLANNED | direct SQL in services | узкие persistence contracts | [U12](05_UPGRADE_BACKLOG.md) |
 | DIP | IMPLEMENTED at AI provider boundary only | [AIInsightService](../../app/ai/service.py) depends on LLMProvider; no httpx/concrete adapter imports; SQL remains direct | persistence DIP still PLANNED | [U05](05_UPGRADE_BACKLOG.md) completed / U12 planned |
@@ -38,3 +38,5 @@ Baseline 1.0 · 2026-09-23. Статусы capability: **IMPLEMENTED** — ко�
 | Distributed infrastructure / tenancy / federated training | NOT_PLANNED | no current requirement/load evidence | reconsider only on changed requirements | none; [rationale](ARCHITECTURAL_PATTERNS.md) |
 
 [Current C4](C4_CURRENT.md) и [Target C4](C4_TARGET.md) намеренно различаются. Ни один PLANNED row не повышается до IMPLEMENTED только из-за появления ADR.
+
+U09 evidence: 25 new + 26 U05 + 14 U02 + 18 existing = 83 unittest PASS; 8 additional functions PASS. No network/real sleep/user DB writes. Provider и AI-boundary DIP остаются IMPLEMENTED; global DIP PARTIAL, Ollama/fallback NO, RAG NO_RAG/PLANNED.

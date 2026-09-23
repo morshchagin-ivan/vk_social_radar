@@ -1,6 +1,6 @@
 # Architectural Pattern Catalog
 
-Baseline 1.0 + U05 · 2026-09-23. Status starts from the historical [audit verdict](02_PATTERN_INVENTORY.md), with AI-boundary changes proven by [U05 tests/report](U05_LLM_PROVIDER_REPORT.md). PLANNED in Target is an accepted direction, not implementation evidence. Pattern names are not inferred from class names alone.
+Baseline 1.0 + U05/U09 · 2026-09-23. Status starts from the historical [audit verdict](02_PATTERN_INVENTORY.md), with AI-boundary changes proven by [U05 tests/report](U05_LLM_PROVIDER_REPORT.md) and [U09 resilience evidence](U09_LLM_RESILIENCE_REPORT.md). PLANNED in Target is an accepted direction, not implementation evidence. Pattern names are not inferred from class names alone.
 
 | Pattern | Status | Problem | Current implementation | Target | Evidence / Backlog |
 |---|---|---|---|---|---|
@@ -13,10 +13,14 @@ Baseline 1.0 + U05 · 2026-09-23. Status starts from the historical [audit verdi
 | DIP | IMPLEMENTED at AI provider boundary only | business independence from vendor transport | AIInsightService accepts LLMProvider; structural fake works without adapter inheritance; composition binds LM Studio | persistence ports PLANNED; no global DIP claim | [service](../../app/ai/service.py), [composition](../../app/ai/composition.py); U05 completed / U12 planned |
 | Strategy | NOT_IMPLEMENTED | replace parser independently | hardcoded kind branch and methods | PLANNED parser contract/registry or injection | [collector.collect](../../app/collector.py); U10 |
 | RAG | DOCUMENTED_ONLY; runtime NO_RAG | question-relevant context/evidence | fixed person metrics/events prompt | PLANNED evaluated local retrieval | [ADR-006](../adr/ADR-006-rag-architecture.md); U08 |
-| Retry | NOT_IMPLEMENTED | bounded transient recovery | single requests, timeouts and normalized errors; no attempt policy | PLANNED budget/backoff/jitter | [LM adapter](../../app/ai/providers/lmstudio.py); U09/U11 |
-| Circuit Breaker | NOT_IMPLEMENTED | fail-fast and controlled recovery | try/except→503, no state/counter | PLANNED CLOSED/OPEN/HALF_OPEN subject to NFR | [main](../../app/main.py); U09/U11 |
+| Retry | IMPLEMENTED | bounded transient recovery | wrapper retries only normalized unavailable/timeout; at most 3 generation attempts; logical failure counted once | U11 measured latency/deadline remains planned | [wrapper](../../app/ai/resilience.py), RES-001/002/003/006/007; U09 completed |
+| Exponential Backoff | IMPLEMENTED | space transient retries | ceiling min(2s, 0.5s × 2^k), k starts at 0 | no hard total latency claim | RES-004; U09 completed |
+| Jitter | IMPLEMENTED | spread retry timing | full jitter U(0, ceiling), injectable random and sleeper; default max total sleep 1.5s | empirical tuning remains U11 | RES-005; U09 completed |
+| Circuit Breaker | IMPLEMENTED | fail-fast and controlled recovery | generation-only CLOSED/OPEN/HALF_OPEN; threshold 3 exhausted logical calls; 30s cooldown; locked single probe | per-process state only; no remote fallback | [behavior/API tests](../../tests/test_llm_resilience.py), CB-001…010; U09 completed |
 
 `try/except` translates an error; it does not track failures or deny requests while OPEN. DOM readiness polling is not LLM retry. Fixed context assembly is not query retrieval. `get_connection` manages connections, not a domain collection interface.
+
+Composition now retains `ResilientLLMProvider(LMStudioProvider)` across requests. Models/health bypass generation resilience and cannot trip/reset its circuit. Global DIP remains PARTIAL; Ollama and fallback are absent. U09 does not enforce a total deadline or add response caching.
 
 ## Patterns deliberately NOT introduced
 

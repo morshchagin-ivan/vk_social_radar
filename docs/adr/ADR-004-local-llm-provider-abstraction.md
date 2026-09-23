@@ -10,13 +10,13 @@
 
 ## Decision
 
-Использовать минимальный vendor-neutral [LLMProvider Protocol](../../app/ai/provider.py) с list_models/generate. Protocol выбран для structural substitution: fake и будущий adapter не обязаны наследовать base class. Typed dataclasses задают messages/model/temperature/optional JSON schema и content/model/provider result; четыре ProviderError subclass нормализуют transport failures. Connection test использует model discovery, отдельный health method не нужен.
+Использовать минимальный vendor-neutral [LLMProvider Protocol](../../app/ai/provider.py) с list_models/generate. Protocol выбран для structural substitution: fake и будущий adapter не обязаны наследовать base class. Typed dataclasses задают messages/model/temperature/optional JSON schema и content/model/provider result; четыре ProviderError subclass нормализуют transport failures, U09 добавляет отдельный LLMCircuitOpenError. Connection test использует model discovery, отдельный health method не нужен.
 
 Единственная production binding — [composition](../../app/ai/composition.py): existing settings → LMStudioProvider и AIInsightService. Только один adapter, поэтому user-visible llm_provider не добавляется. Business prompt, local validation и persistence отделены от HTTP. Ollama NOT IMPLEMENTED; скрытый fallback отсутствует.
 
 ## Current implementation status
 
-IMPLEMENTED: [AIInsightService](../../app/ai/service.py) → LLMProvider → [LMStudioProvider](../../app/ai/providers/lmstudio.py) → HTTP. Main импортирует composition/service/settings, не concrete compatibility module. Adapter владеет URL/paths/httpx, 8/120s timeouts, request mapping и response/error extraction; не знает Person/SQLite/FastAPI. Service не импортирует httpx/adapter. SQL остаётся прямым: это **не global DIP/Repository**.
+IMPLEMENTED: [AIInsightService](../../app/ai/service.py) → LLMProvider → [ResilientLLMProvider (U09)](../../app/ai/resilience.py) → [LMStudioProvider](../../app/ai/providers/lmstudio.py) → HTTP. Main импортирует composition/service/settings, не concrete compatibility module. Adapter владеет URL/paths/httpx, 8/120s timeouts, request mapping и response/error extraction; не знает Person/SQLite/FastAPI. Service не импортирует httpx/adapter/resilience implementation. SQL остаётся прямым: это **не global DIP/Repository**.
 
 Local validation требует ровно status/confidence/summary/evidence/cautions, проверяет enum, number 0…1 (не bool/NaN/Infinity), string и arrays of strings. Невалидный output не сохраняется. API paths/shapes и lmstudio_* settings сохранены, optional model descriptors проходят обратно через models API. Ошибки остаются HTTP 503/detail, текст теперь нормализован без raw response/prompt. Live inference не запускался.
 
@@ -40,4 +40,4 @@ Default остаётся loopback; arbitrary remote URL — открытый U06
 
 ## Evolution path
 
-U05 завершена; рекомендуемый следующий increment — U03 source model. U08 retrieval и U09 resilience после принятых dependencies/NFR остаются PLANNED. Runtime RAG = NO_RAG; Retry/Backoff/Jitter/Circuit Breaker = NOT IMPLEMENTED. Нормализованные ошибки сами по себе не являются retry policy.
+U05 и [U09](../certification/U09_LLM_RESILIENCE_REPORT.md) завершены; рекомендуемый следующий increment — U03 source model. U08 retrieval остаётся PLANNED, runtime RAG = NO_RAG. U09 IMPLEMENTED: generation Retry/Exponential Backoff/Full Jitter/Circuit Breaker, общая per-process binding, models independent. 25 новых U09 tests, все 83 unittest + 8 functions PASS; no network/real sleep. Total deadline НЕ enforced; measured NFR/tuning остаются U11. Ollama/fallback отсутствуют. Исторические результаты U05 выше сохранены как evidence того milestone.

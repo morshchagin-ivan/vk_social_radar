@@ -4,6 +4,7 @@ import ast
 import json
 import socket
 import tempfile
+import time
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -19,6 +20,7 @@ from app.ai.contracts import (
     ProviderUnavailableError, StructuredOutput,
 )
 from app.ai.providers.lmstudio import LMStudioProvider
+from app.ai.resilience import ResilientLLMProvider
 from app.ai.service import AIInsightService, InsightValidationError, store_insight
 from app.ai.settings import save_settings
 from app.services import person_detail
@@ -54,6 +56,7 @@ class FakeProvider:
 
 class NetworkBlockedTests(unittest.TestCase):
     def setUp(self):
+        self.enterContext(patch.object(time, "sleep", side_effect=AssertionError("Real sleep forbidden")))
         self.enterContext(patch.object(socket, "create_connection", side_effect=AssertionError("Network forbidden")))
         self.enterContext(patch.object(httpx.HTTPTransport, "handle_request", side_effect=AssertionError("HTTP network forbidden")))
 
@@ -202,6 +205,7 @@ class InsightFixture(NetworkBlockedTests):
         self.enterContext(patch.multiple(db, DB_PATH=root / "test.db", DATA_DIR=root,
                                         IMPORT_DIR=root / "imports", BACKUP_DIR=root / "backups"))
         self.enterContext(patch.object(importers, "IMPORT_DIR", root / "imports"))
+        self.enterContext(patch.object(composition, "_active_provider", None))
         db.init_db()
         with db.get_connection() as conn:
             self.person_id = conn.execute("INSERT INTO people(vk_id, full_name) VALUES (101, 'Synthetic person')").lastrowid
@@ -298,8 +302,9 @@ class InsightTests(InsightFixture):
     def test_composition_uses_existing_settings(self):
         save_settings({"lmstudio_base_url": "http://provider.invalid/v1/", "lmstudio_model": "chosen", "lmstudio_temperature": "0.6"})
         provider = composition.get_provider()
-        self.assertIsInstance(provider, LMStudioProvider)
-        self.assertEqual(provider.base_url, "http://provider.invalid/v1")
+        self.assertIsInstance(provider, ResilientLLMProvider)
+        self.assertIsInstance(provider.provider, LMStudioProvider)
+        self.assertEqual(provider.provider.base_url, "http://provider.invalid/v1")
         with patch.object(composition, "get_provider", return_value=self.fake):
             composition.get_insight_service().create(self.person_id, self.data)
         self.assertEqual(self.fake.requests[0].model, "chosen")

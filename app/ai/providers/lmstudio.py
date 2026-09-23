@@ -25,15 +25,17 @@ class LMStudioProvider:
         except httpx.TimeoutException:
             raise ProviderTimeoutError("Provider request timed out") from None
         except httpx.HTTPStatusError as exc:
-            if exc.response.status_code >= 500 or exc.response.status_code == 429:
+            if exc.response.status_code in {429, 500, 502, 503, 504}:
                 raise ProviderUnavailableError("Provider is unavailable") from None
             raise ProviderProtocolError("Provider rejected the request") from None
         except (httpx.InvalidURL, httpx.UnsupportedProtocol, httpx.ProtocolError):
             raise ProviderProtocolError("Provider protocol or configuration is invalid") from None
         except httpx.DecodingError:
             raise ProviderResponseError("Provider returned invalid response encoding") from None
-        except httpx.RequestError:
+        except (httpx.NetworkError, httpx.ProxyError):
             raise ProviderUnavailableError("Provider is unavailable") from None
+        except httpx.RequestError:
+            raise ProviderProtocolError("Provider request could not be completed") from None
         except (ValueError, RecursionError):
             raise ProviderResponseError("Provider returned invalid JSON") from None
         if not isinstance(payload, dict):

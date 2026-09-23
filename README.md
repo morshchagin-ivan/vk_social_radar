@@ -8,6 +8,8 @@ Baseline 1.0 · 2026-09-23 · runtime 0.4.2. Защищённый tag `v0.4.2-ce
 
 **U05 IMPLEMENTED** поверх U02: LLMProvider port, LM Studio adapter, отдельный AIInsightService и локальная валидация output — [отчёт](docs/certification/U05_LLM_PROVIDER_REPORT.md). DIP реализован только на AI/provider boundary.
 
+**U09 IMPLEMENTED** поверх U05: generation retry, exponential backoff, full jitter и CLOSED/OPEN/HALF_OPEN Circuit Breaker — [отчёт](docs/certification/U09_LLM_RESILIENCE_REPORT.md). Max 3 attempts, max retry sleep 1.5s, threshold 3 exhausted logical calls, recovery 30s и один probe. Total deadline НЕ enforced; это internal policy, не измеренный latency SLO.
+
 This repository contains a working MVP and a documented target architecture. Target components are never presented as implemented unless confirmed by code and tests.
 
 Начните с [certification landing](docs/certification/README.md), [Architecture Status](docs/certification/ARCHITECTURE_STATUS.md) и [Defense Guide](docs/certification/DEFENSE_GUIDE.md).
@@ -19,17 +21,17 @@ This repository contains a working MVP and a documented target architecture. Tar
 - Отдельный persistent Chromium profile и collection friends/followers/dialogs; public organization source API/jobs.
 - Preview перед явным save поддерживаемых friends/followers/dialog kinds. Organization preview пока сохраняется в RAM/JSON и не совместим с общим save-preview.
 - Импорты JSON/CSV/TSV/HTML/ZIP, relation history/diff-like processing, журнал изменений и message aggregates.
-- Person insight через LLMProvider → LMStudioProvider, выбор model/temperature/endpoint; typed request/result/errors, validation до SQLite save. RAG отсутствует; Ollama adapter не реализован.
+- Person insight через LLMProvider → ResilientLLMProvider → LMStudioProvider, выбор model/temperature/endpoint; typed request/result/errors, validation до SQLite save. RAG отсутствует; Ollama adapter/fallback не реализованы.
 
-Code/wiring подтверждены [аудитом](docs/certification/00_REPOSITORY_AS_IS.md) и U02/U05 tests; live VK/LLM не запускались. Dialog persistence после legacy migration подтверждена U02 на временных БД. Рабочая БД во время сборок не изменялась — [data status](docs/certification/DATA_MODEL_STATUS.md).
+Code/wiring подтверждены [аудитом](docs/certification/00_REPOSITORY_AS_IS.md) и U02/U05/U09 tests; live VK/LLM не запускались. Dialog persistence после legacy migration подтверждена U02 на временных БД. Рабочая БД во время сборок не изменялась — [data status](docs/certification/DATA_MODEL_STATUS.md).
 
 ## Architecture at a glance
 
-[CURRENT C4](docs/certification/C4_CURRENT.md): Static UI → FastAPI → services/raw SQL → SQLite; отдельный browser collector с preview. AI: endpoint → AIInsightService → LLMProvider → LMStudioProvider → HTTP. Composition связывает port с единственным adapter; existing lmstudio_* settings и UI сохранены. Analytics читает локальные records без прямого VK access.
+[CURRENT C4](docs/certification/C4_CURRENT.md): Static UI → FastAPI → services/raw SQL → SQLite; отдельный browser collector с preview. AI: endpoint → AIInsightService → LLMProvider → ResilientLLMProvider → LMStudioProvider → HTTP. Composition сохраняет одну active endpoint binding на процесс, чтобы breaker работал между requests; existing lmstudio_* settings и UI сохранены. Models/health проходят отдельно без retry и не меняют generation circuit. Analytics читает локальные records без прямого VK access.
 
 ## Target architecture
 
-[TARGET C4](docs/certification/C4_TARGET.md): immutable Snapshot, typed API, persistence ports, replaceable parsers и evaluated local retrieval. Migration и Provider реализованы в U02/U05. Snapshot aggregate, Retry/Backoff/Jitter/Circuit Breaker и RAG — **PLANNED**, runtime RAG = **NO_RAG**. Social Graph/Scheduler/Export — roadmap, не current features.
+[TARGET C4](docs/certification/C4_TARGET.md): immutable Snapshot, typed API, persistence ports, replaceable parsers и evaluated local retrieval. Migration, Provider и Retry/Exponential Backoff/Jitter/Circuit Breaker реализованы в U02/U05/U09. Snapshot aggregate и RAG — **PLANNED**, runtime RAG = **NO_RAG**. Global DIP остаётся PARTIAL. Social Graph/Scheduler/Export — roadmap, не current features.
 
 ## Architecture decisions — ADR-001…006
 
@@ -39,13 +41,15 @@ Code/wiring подтверждены [аудитом](docs/certification/00_REPO
 
 Snapshot semantics имеют same-day/repeated/empty defects. U02 исправляет schema drift при startup, но не восстанавливает отсутствующие исторические metadata. OpenAPI target `/api/v1` не соответствует current `/api`. Repository/Strategy отсутствуют; DIP ограничен AI/provider boundary. Arbitrary LLM endpoint/raw diagnostics/fail-open whitelist мешают строгой privacy guarantee; полный privacy audit Git history остаётся U06. [Debt register](docs/certification/TECHNICAL_DEBT_REGISTER.md), [API status](docs/certification/API_STATUS.md), [privacy](docs/certification/SECURITY_PRIVACY_STATUS.md).
 
+U09 сохраняет HTTP timeouts 8/120s: retries не гарантируют hard total latency. Circuit state живёт только в процессе и сбрасывается при restart/смене endpoint. При auto-model selection discovery может выполняться даже при OPEN generation; уже допущенные calls могут завершить retry loop. [Точные границы и NFR](docs/certification/NFR_BASELINE.md).
+
 ## Verification
 
 [Audit results](docs/certification/00_REPOSITORY_AS_IS.md), [traceability](docs/certification/TRACEABILITY_MATRIX.md) и [baseline validation report](docs/certification/BASELINE_UPGRADE_REPORT.md). Старые test specifications/SDD описывают ожидаемые проверки/target design, а не completed evidence. Quantitative NFR ещё не измерены: [NFR baseline](docs/certification/NFR_BASELINE.md).
 
 ## Architecture evolution / backlog
 
-[Evolution stages](docs/certification/ARCHITECTURE_EVOLUTION.md) и [U01–U17 backlog](docs/certification/05_UPGRADE_BACKLOG.md). U02/U05 завершены; следующий рекомендуемый implementation step — U03 immutable Snapshot, пока PLANNED. Вся Data Architecture не объявляется READY.
+[Evolution stages](docs/certification/ARCHITECTURE_EVOLUTION.md) и [U01–U17 backlog](docs/certification/05_UPGRADE_BACKLOG.md). U02/U05/U09 завершены в заявленном scope; следующий рекомендуемый implementation step — U03 immutable Snapshot, пока PLANNED. Вся Data Architecture не объявляется READY.
 
 ## Running locally
 
@@ -69,11 +73,13 @@ Snapshot semantics имеют same-day/repeated/empty defects. U02 исправ�
 .\run_tests.bat
 ```
 
-Эквивалент: `.venv\Scripts\python.exe -m unittest discover -s tests -v`. U05 standard runner — **58 unittest PASS**: 26 AI + 14 U02 migration + 18 existing. Отдельно выполнены **8 existing plain functions PASS** из `tests/test_v043_organization_source.py`; стандартный runner по-прежнему их не обнаруживает. Unified runner/CI — U07; **CI отсутствует**.
+Эквивалент: `.venv\Scripts\python.exe -m unittest discover -s tests -v`. U09 standard runner — **83 unittest PASS**: 25 U09 + 26 U05 AI + 14 U02 migration + 18 existing. Отдельно выполнены **8 existing plain functions PASS** из `tests/test_v043_organization_source.py`; стандартный runner по-прежнему их не обнаруживает. Unified runner/CI — U07; **CI отсутствует**.
 
 U02 изолирует DB/storage/backup paths новых и существующих DB tests; CSV test также подменяет импортированный `IMPORT_DIR`. Тесты используют temporary directories, не рабочие БД/imports/profile и не VK/LLM/network. Две прежние ResourceWarning в marker tests `test_v031.py` не являются failures и остаются вне U02. Команды и результаты — [U02 report](docs/certification/U02_SCHEMA_MIGRATION_REPORT.md); [historical coverage limits](docs/certification/03_SDD_CODE_GAP_ANALYSIS.md).
 
 U05 добавляет fake provider, httpx.MockTransport и in-process API tests с запретом сетевого HTTP; reusable provider contract запускается для fake и LM Studio adapter. [U05 report](docs/certification/U05_LLM_PROVIDER_REPORT.md) содержит mapping/error/validation/API/import-fitness evidence. Успешный live inference этими тестами не заявляется.
+
+U09 добавляет scripted provider, fake monotonic clock/sleeper/random, synchronised concurrency и resilience API tests; network и настоящий `time.sleep` запрещены test guards. [U09 report](docs/certification/U09_LLM_RESILIENCE_REPORT.md) содержит RES/CB/API mapping и команды всех regression gates.
 
 ## Existing v0.4.2 notes — Exact Messenger Scroll Container Fix
 

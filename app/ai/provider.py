@@ -6,8 +6,9 @@ from .contracts import GenerationRequest, GenerationResult, ModelInfo
 class LLMProvider(Protocol):
     """Only today's capabilities. Connection testing uses model discovery.
 
-    Implementations return normalized values or raise ProviderError subclasses;
-    they do not retry, persist insights or interpret the Person domain.
+    Implementations return normalized values or raise ProviderError subclasses.
+    A resilience decorator may retry generation; transports remain single-call.
+    Providers do not persist insights or interpret the Person domain.
     """
 
     def list_models(self) -> list[ModelInfo]: ...

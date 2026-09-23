@@ -60,3 +60,7 @@ class ProviderProtocolError(ProviderError):
 
 class ProviderResponseError(ProviderError):
     pass
+
+
+class LLMCircuitOpenError(ProviderError):
+    """Generation is temporarily rejected without calling the transport."""
