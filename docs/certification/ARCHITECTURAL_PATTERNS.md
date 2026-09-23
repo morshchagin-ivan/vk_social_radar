@@ -1,19 +1,19 @@
 # Architectural Pattern Catalog
 
-Baseline 1.0 · 2026-09-23. The Status column preserves [audit verdict](02_PATTERN_INVENTORY.md); PLANNED in Target is an accepted direction, not implementation evidence. Pattern names are not inferred from class names alone.
+Baseline 1.0 + U05 · 2026-09-23. Status starts from the historical [audit verdict](02_PATTERN_INVENTORY.md), with AI-boundary changes proven by [U05 tests/report](U05_LLM_PROVIDER_REPORT.md). PLANNED in Target is an accepted direction, not implementation evidence. Pattern names are not inferred from class names alone.
 
 | Pattern | Status | Problem | Current implementation | Target | Evidence / Backlog |
 |---|---|---|---|---|---|
 | Local-first | PARTIAL | local control/privacy | local bind/files/SQLite; arbitrary LLM URL | enforced local inference/privacy | [ADR-001](../adr/ADR-001-local-first-architecture.md); U06 |
-| Adapter | PARTIAL | isolate external protocols | concrete browser wrapper, LM HTTP, file mappers; no common port | narrow vendor/browser/persistence adapters | [collector](../../app/collector.py), [lmstudio](../../app/lmstudio.py); U05/U10/U12 |
+| Adapter | IMPLEMENTED for LM Studio; PARTIAL elsewhere | isolate external protocols | LMStudioProvider implements LLMProvider, owns HTTP/extraction/errors; browser/file wrappers remain concrete | browser/persistence adapters still planned | [LM adapter](../../app/ai/providers/lmstudio.py), [contract tests](../../tests/test_ai_provider.py); U05 completed / U10/U12 planned |
 | ACL | PARTIAL | external DOM/raw→internal data | cleaners and dict normalization | typed identity/result boundary | [importers](../../app/importers.py); U10/U13 |
 | Pipeline | PARTIAL | staged transformation | collect→preview→manual save; import→normalize→SQL/diff; AI separate | validated run→snapshot→derived data→retrieval | [services](../../app/services.py); U03/U08 |
 | Immutable Snapshot | PARTIAL history; immutability CONTRADICTED_BY_CODE | reproducible history | daily memberships and mutable people | PLANNED immutable aggregate | [ADR-003](../adr/ADR-003-immutable-snapshot-source-of-truth.md); U03 |
 | Repository | NOT_IMPLEMENTED | persistence boundary | direct SQL, connection helper is not repository | PLANNED selected persistence ports | [services](../../app/services.py); U12 |
-| DIP | NOT_IMPLEMENTED | business independence from IO | concrete module/singleton imports | PLANNED provider/persistence ports | [main](../../app/main.py); U05/U12 |
+| DIP | IMPLEMENTED at AI provider boundary only | business independence from vendor transport | AIInsightService accepts LLMProvider; structural fake works without adapter inheritance; composition binds LM Studio | persistence ports PLANNED; no global DIP claim | [service](../../app/ai/service.py), [composition](../../app/ai/composition.py); U05 completed / U12 planned |
 | Strategy | NOT_IMPLEMENTED | replace parser independently | hardcoded kind branch and methods | PLANNED parser contract/registry or injection | [collector.collect](../../app/collector.py); U10 |
 | RAG | DOCUMENTED_ONLY; runtime NO_RAG | question-relevant context/evidence | fixed person metrics/events prompt | PLANNED evaluated local retrieval | [ADR-006](../adr/ADR-006-rag-architecture.md); U08 |
-| Retry | NOT_IMPLEMENTED | bounded transient recovery | single requests, timeout settings only | PLANNED classifier/attempt budget/backoff/jitter | [lmstudio](../../app/lmstudio.py); U09/U11 |
+| Retry | NOT_IMPLEMENTED | bounded transient recovery | single requests, timeouts and normalized errors; no attempt policy | PLANNED budget/backoff/jitter | [LM adapter](../../app/ai/providers/lmstudio.py); U09/U11 |
 | Circuit Breaker | NOT_IMPLEMENTED | fail-fast and controlled recovery | try/except→503, no state/counter | PLANNED CLOSED/OPEN/HALF_OPEN subject to NFR | [main](../../app/main.py); U09/U11 |
 
 `try/except` translates an error; it does not track failures or deny requests while OPEN. DOM readiness polling is not LLM retry. Fixed context assembly is not query retrieval. `get_connection` manages connections, not a domain collection interface.

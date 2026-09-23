@@ -2,7 +2,7 @@
 
 Baseline 1.0 · 2026-09-23. Статусы capability: **IMPLEMENTED** — код и wiring подтверждены (уровень тестирования указан отдельно); **PARTIAL** — существует ограниченное подмножество; **PLANNED** — нужный механизм пока отсутствует; **NOT_PLANNED** — не входит в текущую evolution scope. PLANNED не означает implementation in progress.
 
-Источник: [audit inventory](01_ARCHITECTURE_INVENTORY.md), [pattern verdicts](02_PATTERN_INVENTORY.md), [U02 implementation report](U02_SCHEMA_MIGRATION_REPORT.md). Все Uxx ссылаются на [upgrade backlog](05_UPGRADE_BACKLOG.md), обновлённый для U02. Immutable Snapshot отмечен PLANNED как aggregate; audit PARTIAL относится только к существующей истории membership, а immutability audit verdict — CONTRADICTED_BY_CODE.
+Источник: [audit inventory](01_ARCHITECTURE_INVENTORY.md), [pattern verdicts](02_PATTERN_INVENTORY.md), [U02 report](U02_SCHEMA_MIGRATION_REPORT.md), [U05 report](U05_LLM_PROVIDER_REPORT.md). Все Uxx ссылаются на [upgrade backlog](05_UPGRADE_BACKLOG.md), обновлённый для U02/U05. Immutable Snapshot отмечен PLANNED как aggregate; audit PARTIAL относится только к существующей истории membership, а immutability audit verdict — CONTRADICTED_BY_CODE.
 
 | Capability / Pattern | Status | AS-IS evidence | Target | Backlog |
 |---|---|---|---|---|
@@ -16,13 +16,13 @@ Baseline 1.0 · 2026-09-23. Статусы capability: **IMPLEMENTED** — ко�
 | Diff | PARTIAL | services.import_snapshot set differences; removed assertion | two complete comparable snapshots | [U03](05_UPGRADE_BACKLOG.md) |
 | Timeline | PARTIAL | relation_events/list_changes/person_detail | provenance and stable chronology | [U03/U04](05_UPGRADE_BACKLOG.md) |
 | Analytics | PARTIAL | dashboard/message_leaderboard SQL; tests | consistent period/snapshot scope | [U03/U16](05_UPGRADE_BACKLOG.md) |
-| LM Studio integration | IMPLEMENTED | [generate_person_insight](../../app/lmstudio.py), main/create_insight, UI; no live inference proof | сохранить concrete adapter, добавить contract tests | [U05/U07](05_UPGRADE_BACKLOG.md) evolution |
-| LLM Provider abstraction | PLANNED | direct LM module imports; no port/selection | provider port + LM adapter | [U05](05_UPGRADE_BACKLOG.md) |
+| LM Studio adapter | IMPLEMENTED | [LMStudioProvider](../../app/ai/providers/lmstudio.py): HTTP mapping, 8/120s timeouts, normalized errors; mock contract tests PASS; no live inference proof | сохранить contract при evolution | [U05](05_UPGRADE_BACKLOG.md) completed |
+| LLM Provider abstraction | IMPLEMENTED | [LLMProvider Protocol](../../app/ai/provider.py), typed contracts, [composition](../../app/ai/composition.py), fake substitution and local validation PASS | only LM Studio bound; Ollama NOT IMPLEMENTED | [U05](05_UPGRADE_BACKLOG.md) completed |
 | Retry/backoff/jitter | PLANNED | только HTTP timeout, retry отсутствует | bounded policy, accepted NFR | [U09/U11](05_UPGRADE_BACKLOG.md) |
 | Circuit Breaker | PLANNED | только try/except → 503 | stateful gate subject to NFR | [U09/U11](05_UPGRADE_BACKLOG.md) |
 | Immutable Snapshot aggregate | PLANNED | relation rows не immutable aggregate; audit defects | header/items/completeness/run/version | [U03](05_UPGRADE_BACKLOG.md) |
 | Repository | PLANNED | direct SQL in services | узкие persistence contracts | [U12](05_UPGRADE_BACKLOG.md) |
-| DIP | PLANNED | concrete db/client imports | application ports at IO seams | [U05/U12](05_UPGRADE_BACKLOG.md) |
+| DIP | IMPLEMENTED at AI provider boundary only | [AIInsightService](../../app/ai/service.py) depends on LLMProvider; no httpx/concrete adapter imports; SQL remains direct | persistence DIP still PLANNED | [U05](05_UPGRADE_BACKLOG.md) completed / U12 planned |
 | Collector Strategy | PLANNED | if/elif + methods, no substitution seam | parser contract and replaceable strategies | [U10](05_UPGRADE_BACKLOG.md) |
 | ACL/normalization | PARTIAL | importers._normalize_person, DOM cleaners/org mapper | typed boundary/identity validation | [U10/U13](05_UPGRADE_BACKLOG.md) |
 | RAG | PLANNED | runtime NO_RAG; fixed person context | evaluated local query retrieval | [U08](05_UPGRADE_BACKLOG.md) |

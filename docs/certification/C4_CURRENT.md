@@ -1,6 +1,6 @@
 # C4 CURRENT — verified working copy
 
-Baseline 1.0 · 2026-09-23. AS-IS: один local FastAPI process, static browser UI, SQLite/files и внешние VK web/local inference процессы. Это обзор context/containers с module-level деталями внутри backend, не утверждение об отдельных deployment services.
+Baseline 1.0 + U02/U05 · 2026-09-23. AS-IS: один local FastAPI process, static browser UI, SQLite/files и внешние VK web/local inference процессы. Это обзор context/containers с module-level деталями внутри backend, не утверждение об отдельных deployment services.
 
 ```mermaid
 flowchart LR
@@ -14,10 +14,17 @@ flowchart LR
   API --> Collector["SafeVKCollector"]
   Collector --> PW["Playwright - persistent Chromium profile"]
   PW --> VK["VK Web"]
-  API --> LMModule["lmstudio.py - prompt HTTP settings persistence"]
-  LMModule --> Endpoint["Configured OpenAI-compatible endpoint"]
+  API --> AI["AIInsightService - context validation persistence"]
+  AI --> Port["LLMProvider Protocol"]
+  Port --> LMAdapter["LMStudioProvider - HTTP mapping and errors"]
+  API --> Composition["ai.composition - provider binding"]
+  Composition -.-> AI
+  Composition -.-> LMAdapter
+  API --> Settings["ai.settings - existing three keys"]
+  Settings --> DB
+  AI --> DB
+  LMAdapter --> Endpoint["Configured OpenAI-compatible endpoint"]
   Endpoint --> LMDefault["LM Studio by default - localhost:1234/v1"]
-  LMModule --> DB
   Collector --> Preview["In-memory preview and local JSON"]
   Collector --> Diagnostics["Local HTML PNG JSON diagnostics"]
   Preview --> PreviewUI["UI preview"]
@@ -33,8 +40,10 @@ Configured endpoint — configuration boundary к LM Studio по умолчан�
 | API/services/SQLite | concrete function calls и direct SQL | [services.py](../../app/services.py), [db.py](../../app/db.py) |
 | Collector/browser | persistent context; collect friends/followers/dialogs; organization source | [SafeVKCollector](../../app/collector.py), start/collect/collect_public_organization_source |
 | Preview/save | collect возвращает preview; save-preview вызывает service | main.collector_save_preview, services.save_collector_preview; [audit](01_ARCHITECTURE_INVENTORY.md) |
-| AI | person_detail → fixed context → HTTP completions → ai_insights | [lmstudio.py](../../app/lmstudio.py), main.create_insight |
+| AI | person_detail → AIInsightService → LLMProvider → LMStudioProvider; local validation before ai_insights | [service](../../app/ai/service.py), [port](../../app/ai/provider.py), [adapter](../../app/ai/providers/lmstudio.py), [composition](../../app/ai/composition.py); [U05 evidence](U05_LLM_PROVIDER_REPORT.md) |
 
-Friends/followers save преобразуется в relation rows по дню; dialogs save — в collector_dialogs. Установленная DB имеет known schema drift. Organization-source result находится в памяти/JSON; общий save-preview его не поддерживает. Jobs volatile; startup вызывает init_db/demo seed. В отдельные nodes не вынесены все вспомогательные функции — это не отсутствие соответствующего кода.
+Friends/followers save преобразуется в relation rows по дню; dialogs save — в collector_dialogs. U02 предоставляет migration старой схемы; пользовательская DB не мигрировалась во время сборок. Organization-source result находится в памяти/JSON; общий save-preview его не поддерживает. Jobs volatile; startup вызывает init_db/demo seed. В отдельные nodes не вынесены все вспомогательные функции — это не отсутствие соответствующего кода.
+
+U05 реализует DIP только на AI/provider boundary. SQL persistence остаётся прямой. `app/lmstudio.py` — compatibility facade для прежних Python callers, production API его не импортирует. Models и connection test используют тот же provider port; test проверяет discovery, не inference readiness. Retry/Backoff/Jitter/Circuit Breaker/Ollama отсутствуют.
 
 Здесь нет React, Scheduler, RAG, AI Worker, Social Graph, Repository, Kafka или Redis. Non-AI analytics не читает VK напрямую, но **не** опирается на immutable Snapshot aggregate. Код и wiring исследованы, live VK/LLM не запускались. [Target](C4_TARGET.md), [gaps](TECHNICAL_DEBT_REGISTER.md), [audit](00_REPOSITORY_AS_IS.md).

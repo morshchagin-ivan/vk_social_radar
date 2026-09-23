@@ -10,14 +10,10 @@ from fastapi.staticfiles import StaticFiles
 from .db import init_db
 from .collector import classify_public_vk_source, collector
 from .importers import import_uploaded_file
-from .lmstudio import (
-    generate_person_insight,
-    get_settings,
-    list_models,
-    save_settings,
-    store_insight,
-    test_connection,
-)
+from .ai.composition import get_insight_service, get_provider
+from .ai.contracts import ProviderError
+from .ai.service import AIConfigurationError, InsightValidationError
+from .ai.settings import get_settings, save_settings
 from .seed import seed_demo_data
 from .services import dashboard, import_snapshot, list_changes, list_people, message_leaderboard, person_detail, save_collector_preview, list_collected_dialogs
 
@@ -115,17 +111,22 @@ def settings_put(payload: dict[str, Any]) -> dict[str, str]:
 @app.get("/api/lmstudio/models")
 def lm_models() -> list[dict[str, Any]]:
     try:
-        return list_models()
-    except Exception as exc:
+        return [model.as_dict() for model in get_provider().list_models()]
+    except ProviderError as exc:
         raise HTTPException(status_code=503, detail=f"LM Studio недоступна: {exc}") from exc
+    except Exception:
+        raise HTTPException(status_code=503, detail="LM Studio недоступна") from None
 
 
 @app.post("/api/lmstudio/test")
 def lm_test() -> dict[str, Any]:
     try:
-        return test_connection()
-    except Exception as exc:
+        models = get_provider().list_models()
+        return {"ok": True, "models_count": len(models), "models": [model.id for model in models]}
+    except ProviderError as exc:
         raise HTTPException(status_code=503, detail=f"LM Studio недоступна: {exc}") from exc
+    except Exception:
+        raise HTTPException(status_code=503, detail="LM Studio недоступна") from None
 
 
 @app.post("/api/people/{person_id}/insight")
@@ -134,10 +135,11 @@ def create_insight(person_id: int) -> dict[str, Any]:
     if not data:
         raise HTTPException(status_code=404, detail="Person not found")
     try:
-        insight = generate_person_insight(data)
-        return store_insight(person_id, insight)
-    except Exception as exc:
+        return get_insight_service().create(person_id, data)
+    except (ProviderError, InsightValidationError, AIConfigurationError) as exc:
         raise HTTPException(status_code=503, detail=f"Не удалось получить анализ: {exc}") from exc
+    except Exception:
+        raise HTTPException(status_code=503, detail="Не удалось получить анализ") from None
 
 
 @app.post("/api/collector/start")
