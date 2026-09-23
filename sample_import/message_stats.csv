@@ -1,0 +1,3 @@
+vk_id,full_name,profile_url,period_start,period_end,incoming_count,outgoing_count,active_days,initiated_by_person,initiated_by_me,median_reply_minutes
+101,Анна Петрова,https://vk.com/id101,2026-06-01,2026-06-30,120,97,16,7,4,14
+102,Сергей Волков,https://vk.com/id102,2026-06-01,2026-06-30,31,28,8,3,5,90

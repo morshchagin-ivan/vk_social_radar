@@ -1,0 +1,17 @@
+[
+  {
+    "vk_id": 101,
+    "full_name": "Анна Петрова",
+    "profile_url": "https://vk.com/id101"
+  },
+  {
+    "vk_id": 102,
+    "full_name": "Сергей Волков",
+    "profile_url": "https://vk.com/id102"
+  },
+  {
+    "vk_id": 103,
+    "full_name": "Мария Орлова",
+    "profile_url": "https://vk.com/id103"
+  }
+]

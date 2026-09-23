@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VK Social Radar v0.2</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark">SR</div><div><strong>Social Radar</strong><span>Local analytics · v0.4.2</span></div></div>
+    <nav>
+      <button class="nav-item active" data-view="overview">Обзор</button>
+      <button class="nav-item" data-view="people">Люди</button>
+      <button class="nav-item" data-view="messages">Сообщения</button>
+      <button class="nav-item" data-view="dialogs">Диалоги</button>
+      <button class="nav-item" data-view="changes">Изменения</button>
+      <button class="nav-item" data-view="collector">Сбор из VK</button>
+      <button class="nav-item" data-view="import">Импорт данных</button>
+      <button class="nav-item" data-view="ai">ИИ-анализ</button>
+      <button class="nav-item" data-view="settings">Настройки</button>
+    </nav>
+    <div class="privacy"><strong>Локальный режим</strong><span>База, импорты и ИИ остаются на этом компьютере.</span></div>
+  </aside>
+
+  <main class="content">
+    <header class="topbar">
+      <div><h1 id="page-title">Обзор</h1><p id="page-subtitle">Ключевые изменения социальных связей</p></div>
+      <button id="refresh-btn" class="secondary">Обновить</button>
+    </header>
+
+    <section id="view-overview" class="view active">
+      <div id="metric-grid" class="metric-grid"></div>
+      <div class="panel-grid">
+        <section class="panel"><div class="panel-head"><h2>Последние изменения</h2><button class="link-button" data-open-view="changes">Все события</button></div><div id="overview-changes" class="list"></div></section>
+        <section class="panel"><div class="panel-head"><h2>С кем общение активнее</h2><button class="link-button" data-open-view="messages">Подробнее</button></div><div id="top-people" class="list"></div></section>
+      </div>
+    </section>
+
+    <section id="view-people" class="view">
+      <section class="panel"><div class="panel-head"><h2>Люди</h2><input id="people-search" type="search" placeholder="Поиск по имени"></div><div id="people-table-wrap"></div></section>
+    </section>
+
+    <section id="view-messages" class="view">
+      <section class="panel"><div class="panel-head"><div><h2>Статистика сообщений</h2><p>Количество, частота, баланс и инициатива</p></div></div><div id="messages-table-wrap"></div></section>
+    </section>
+
+<section id="view-dialogs" class="view"><section class="panel"><div class="panel-head"><div><h2>Собранные диалоги</h2><p>Последний снимок VK Messenger</p></div><input id="dialogs-search" type="search" placeholder="Поиск"></div><div id="dialogs-summary" class="metric-grid"></div><div id="dialogs-list" class="list"></div></section></section>
+    <section id="view-changes" class="view">
+      <section class="panel"><div class="panel-head"><div><h2>Журнал изменений</h2><p>Друзья и подписчики: было / стало</p></div></div><div id="changes-list" class="list"></div></section>
+    </section>
+
+
+    <section id="view-collector" class="view">
+      <div class="panel-grid collector-layout">
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Safe VK Collector</h2>
+              <p>Отдельный Chromium-профиль. Сбор запускается только вручную.</p>
+            </div>
+            <span id="collector-state-badge" class="badge">Остановлен</span>
+          </div>
+
+          <div id="collector-status" class="notice">Сборщик ещё не запускался.</div>
+
+          <div class="collector-actions">
+            <button id="collector-start" class="primary">1. Открыть Chromium</button>
+            <button id="collector-auth" class="secondary">2. Проверить вход</button>
+            <button id="collector-friends" class="secondary">Собрать друзей</button>
+            <button id="collector-followers" class="secondary">Собрать подписчиков</button>
+            <button id="collector-dialogs" class="secondary">Собрать диалоги</button>
+            <button id="collector-close" class="secondary">Закрыть Chromium</button>
+            <button id="collector-delete" class="danger">Удалить локальную сессию</button>
+          </div>
+
+          <div class="security-note">
+            <strong>Что не собирается</strong>
+            <p>Пароли, cookies, текст сообщений, вложения и данные других вкладок. Профиль хранится в <code>data\vk_browser_profile</code> и не входит в ZIP.</p>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Предпросмотр</h2>
+              <p>Данные попадут в базу только после подтверждения.</p>
+            </div>
+            <button id="collector-save" class="primary" disabled>Сохранить снимок</button>
+          </div>
+          <div id="collector-report" class="empty">Сначала выполните сбор.</div>
+          <div id="collector-preview" class="preview-table-wrap"></div>
+        </section>
+      </div>
+    </section>
+
+    <section id="view-import" class="view">
+      <div class="panel-grid">
+        <section class="panel import-panel">
+          <h2>Импорт файла</h2>
+          <p>JSON, CSV, TSV, HTML или ZIP. До 100 МБ.</p>
+          <label class="field">Тип данных
+            <select id="file-import-type">
+              <option value="relations">Друзья / подписчики</option>
+              <option value="message_stats">Статистика сообщений</option>
+            </select>
+          </label>
+          <div class="form-row">
+            <label>Тип связи
+              <select id="file-relation-type"><option value="friend">Друзья</option><option value="follower">Подписчики</option></select>
+            </label>
+            <label>Дата снимка<input id="file-snapshot-date" type="date"></label>
+          </div>
+          <label class="dropzone">Выбрать файл<input id="import-file" type="file" accept=".json,.csv,.tsv,.html,.htm,.zip"></label>
+          <div class="actions"><button id="file-import-btn" class="primary">Загрузить и обработать</button><span id="file-import-status"></span></div>
+        </section>
+
+        <section class="panel import-panel">
+          <h2>Быстрый JSON-снимок</h2>
+          <p>Ручная вставка списка, как в версии 0.1.</p>
+          <div class="form-row">
+            <label>Тип связи<select id="relation-type"><option value="friend">Друзья</option><option value="follower">Подписчики</option></select></label>
+            <label>Дата снимка<input id="snapshot-date" type="date"></label>
+          </div>
+          <textarea id="snapshot-json" spellcheck="false">[
+  {"vk_id": 101, "full_name": "Анна Петрова", "profile_url": "https://vk.com/id101"}
+]</textarea>
+          <div class="actions"><button id="import-btn" class="primary">Импортировать</button><span id="import-status"></span></div>
+        </section>
+      </div>
+    </section>
+
+    <section id="view-ai" class="view">
+      <section class="panel">
+        <div class="panel-head"><div><h2>Локальный ИИ-анализ</h2><p>LM Studio интерпретирует только рассчитанные метрики</p></div><button id="ai-refresh-btn" class="secondary">Обновить список</button></div>
+        <div id="ai-status" class="notice">Сначала проверьте LM Studio в настройках.</div>
+        <div id="ai-people" class="cards-grid"></div>
+      </section>
+    </section>
+
+    <section id="view-settings" class="view">
+      <section class="panel settings-panel">
+        <h2>LM Studio</h2>
+        <p>В LM Studio включите Developer → Start Server. По умолчанию используется порт 1234.</p>
+        <label class="field">Base URL<input id="lm-base-url" value="http://127.0.0.1:1234/v1"></label>
+        <label class="field">Модель<select id="lm-model"><option value="">Автовыбор первой доступной</option></select></label>
+        <label class="field">Temperature<input id="lm-temperature" type="number" min="0" max="1" step="0.05" value="0.2"></label>
+        <div class="actions">
+          <button id="settings-save-btn" class="primary">Сохранить</button>
+          <button id="lm-test-btn" class="secondary">Проверить соединение</button>
+          <span id="settings-status"></span>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <dialog id="person-dialog"><button id="dialog-close" class="dialog-close">×</button><div id="person-detail"></div></dialog>
+  <script src="/static/app.js"></script>
+</body>
+</html>

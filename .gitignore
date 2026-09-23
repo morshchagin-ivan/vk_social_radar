@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+*.pyc
+data/social_radar.db
+data/imports/*
+data/backups/*
+data/collector_previews/*
+data/vk_browser_profile/*
+logs/collector/*
+!data/imports/.gitkeep
+!data/backups/.gitkeep
+!data/collector_previews/.gitkeep
+!data/vk_browser_profile/.gitkeep
+!logs/collector/.gitkeep

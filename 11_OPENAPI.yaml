@@ -1,0 +1,789 @@
+# STATUS: TARGET CONTRACT
+# This file is not the current runtime contract. Runtime/API reconciliation: U04.
+
+openapi: 3.1.0
+
+info:
+  title: VK Social Radar API
+  version: 1.0.0
+  summary: Local-first Social Intelligence Platform
+  description: |
+    REST API for VK Social Radar.
+
+    Features:
+
+      - Snapshot management
+      - VK Collector
+      - Timeline
+      - Relationship Intelligence
+      - Social Graph
+      - AI Reports
+      - AI Chat
+      - Search
+      - Export
+
+license:
+  name: MIT
+
+servers:
+
+  - url: http://localhost:8000/api/v1
+    description: Local Development
+
+  - url: https://localhost/api/v1
+    description: Local HTTPS
+
+tags:
+
+  - name: Health
+  - name: Settings
+  - name: Collector
+  - name: Snapshots
+  - name: Persons
+  - name: Dialogs
+  - name: Messages
+  - name: Communities
+  - name: Timeline
+  - name: Relationships
+  - name: Graph
+  - name: Analytics
+  - name: AI
+  - name: Search
+  - name: Export
+
+security:
+
+  - BearerAuth: []
+
+paths:
+
+  /health:
+
+    get:
+
+      tags:
+        - Health
+
+      summary: Health check
+
+      operationId: health
+
+      responses:
+
+        "200":
+
+          description: Service is healthy
+
+          content:
+
+            application/json:
+
+              schema:
+
+                $ref: '#/components/schemas/HealthResponse'
+
+  /settings:
+
+    get:
+
+      tags:
+        - Settings
+
+      summary: Get application settings
+
+      operationId: getSettings
+
+      responses:
+
+        "200":
+
+          description: Settings returned
+
+          content:
+
+            application/json:
+
+              schema:
+
+                $ref: '#/components/schemas/Settings'
+
+    put:
+
+      tags:
+        - Settings
+
+      summary: Update settings
+
+      operationId: updateSettings
+
+      requestBody:
+
+        required: true
+
+        content:
+
+          application/json:
+
+            schema:
+
+              $ref: '#/components/schemas/SettingsUpdate'
+
+      responses:
+
+        "200":
+
+          description: Updated
+
+          content:
+
+            application/json:
+
+              schema:
+
+                $ref: '#/components/schemas/Settings'
+
+  /collector/run:
+
+    post:
+
+      tags:
+
+        - Collector
+
+      summary: Start VK collector
+
+      operationId: runCollector
+
+      responses:
+
+        "202":
+
+          description: Collector started
+
+          content:
+
+            application/json:
+
+              schema:
+
+                $ref: '#/components/schemas/CollectorRun'
+
+  /collector/status:
+
+    get:
+
+      tags:
+
+        - Collector
+
+      summary: Collector status
+
+      operationId: collectorStatus
+
+      responses:
+
+        "200":
+
+          description: Current collector status
+
+          content:
+
+            application/json:
+
+              schema:
+
+                $ref: '#/components/schemas/CollectorStatus'
+
+  /snapshots:
+
+    get:
+
+      tags:
+
+        - Snapshots
+
+      summary: List snapshots
+
+      operationId: listSnapshots
+
+      parameters:
+
+        - $ref: '#/components/parameters/Page'
+
+        - $ref: '#/components/parameters/PageSize'
+
+        - $ref: '#/components/parameters/Sort'
+
+      responses:
+
+        "200":
+
+          description: Snapshot list
+
+          content:
+
+            application/json:
+
+              schema:
+
+                $ref: '#/components/schemas/SnapshotPage'
+
+  /snapshots/{snapshotId}:
+
+    get:
+
+      tags:
+
+        - Snapshots
+
+      summary: Snapshot details
+
+      operationId: getSnapshot
+
+      parameters:
+
+        - $ref: '#/components/parameters/SnapshotId'
+
+      responses:
+
+        "200":
+
+          description: Snapshot
+
+          content:
+
+            application/json:
+
+              schema:
+
+                $ref: '#/components/schemas/Snapshot'
+
+        "404":
+
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+
+      tags:
+
+        - Snapshots
+
+      summary: Delete snapshot
+
+      operationId: deleteSnapshot
+
+      parameters:
+
+        - $ref: '#/components/parameters/SnapshotId'
+
+      responses:
+
+        "204":
+
+          description: Deleted
+
+  /persons:
+
+    get:
+
+      tags:
+
+        - Persons
+
+      summary: Search persons
+
+      operationId: listPersons
+
+      parameters:
+
+        - $ref: '#/components/parameters/Page'
+
+        - $ref: '#/components/parameters/PageSize'
+
+        - name: query
+
+          in: query
+
+          schema:
+
+            type: string
+
+        - name: city
+
+          in: query
+
+          schema:
+
+            type: string
+
+      responses:
+
+        "200":
+
+          description: Person list
+
+          content:
+
+            application/json:
+
+              schema:
+
+                $ref: '#/components/schemas/PersonPage'
+
+  /persons/{personId}:
+
+    get:
+
+      tags:
+
+        - Persons
+
+      summary: Person profile
+
+      operationId: getPerson
+
+      parameters:
+
+        - $ref: '#/components/parameters/PersonId'
+
+      responses:
+
+        "200":
+
+          description: Person
+
+          content:
+
+            application/json:
+
+              schema:
+
+                $ref: '#/components/schemas/Person'
+
+  /timeline:
+
+    get:
+
+      tags:
+
+        - Timeline
+
+      summary: Timeline events
+
+      operationId: timeline
+
+      parameters:
+
+        - name: personId
+
+          in: query
+
+          schema:
+
+            type: string
+            format: uuid
+
+        - name: eventType
+
+          in: query
+
+          schema:
+
+            type: string
+
+        - name: from
+
+          in: query
+
+          schema:
+
+            type: string
+            format: date-time
+
+        - name: to
+
+          in: query
+
+          schema:
+
+            type: string
+            format: date-time
+
+      responses:
+
+        "200":
+
+          description: Timeline
+
+          content:
+
+            application/json:
+
+              schema:
+
+                $ref: '#/components/schemas/TimelinePage'
+
+  /relationships:
+
+    get:
+
+      tags:
+
+        - Relationships
+
+      summary: Relationship analysis
+
+      operationId: relationships
+
+      parameters:
+
+        - name: minScore
+
+          in: query
+
+          schema:
+
+            type: number
+
+      responses:
+
+        "200":
+
+          description: Relationship list
+
+          content:
+
+            application/json:
+
+              schema:
+
+                $ref: '#/components/schemas/RelationshipPage'
+
+  /graph:
+
+    get:
+
+      tags:
+
+        - Graph
+
+      summary: Social graph
+
+      operationId: graph
+
+      responses:
+
+        "200":
+
+          description: Graph
+
+          content:
+
+            application/json:
+
+              schema:
+
+                $ref: '#/components/schemas/SocialGraph'
+
+  /ai/report/{snapshotId}:
+
+    post:
+
+      tags:
+
+        - AI
+
+      summary: Generate AI report
+
+      operationId: aiReport
+
+      parameters:
+
+        - $ref: '#/components/parameters/SnapshotId'
+
+      responses:
+
+        "200":
+
+          description: Generated
+
+          content:
+
+            application/json:
+
+              schema:
+
+                $ref: '#/components/schemas/AIReport'
+
+  /ai/chat:
+
+    post:
+
+      tags:
+
+        - AI
+
+      summary: Chat with AI
+
+      operationId: aiChat
+
+      requestBody:
+
+        required: true
+
+        content:
+
+          application/json:
+
+            schema:
+
+              $ref: '#/components/schemas/ChatRequest'
+
+      responses:
+
+        "200":
+
+          description: AI answer
+
+          content:
+
+            application/json:
+
+              schema:
+
+                $ref: '#/components/schemas/ChatResponse'
+
+  /search:
+
+    get:
+
+      tags:
+
+        - Search
+
+      summary: Global search
+
+      operationId: search
+
+      parameters:
+
+        - name: query
+
+          in: query
+
+          required: true
+
+          schema:
+
+            type: string
+
+      responses:
+
+        "200":
+
+          description: Search result
+
+          content:
+
+            application/json:
+
+              schema:
+
+                $ref: '#/components/schemas/SearchResponse'
+
+  /export/json:
+
+    get:
+
+      tags:
+
+        - Export
+
+      summary: Export JSON
+
+      responses:
+
+        "200":
+
+          description: Export created
+
+  /export/csv:
+
+    get:
+
+      tags:
+
+        - Export
+
+      summary: Export CSV
+
+      responses:
+
+        "200":
+
+          description: Export created
+
+components:
+
+  securitySchemes:
+
+    BearerAuth:
+
+      type: http
+
+      scheme: bearer
+
+      bearerFormat: JWT
+
+  parameters:
+
+    SnapshotId:
+
+      name: snapshotId
+
+      in: path
+
+      required: true
+
+      schema:
+
+        type: string
+        format: uuid
+
+    PersonId:
+
+      name: personId
+
+      in: path
+
+      required: true
+
+      schema:
+
+        type: string
+        format: uuid
+
+    Page:
+
+      name: page
+
+      in: query
+
+      schema:
+
+        type: integer
+        default: 1
+        minimum: 1
+
+    PageSize:
+
+      name: size
+
+      in: query
+
+      schema:
+
+        type: integer
+        default: 50
+        maximum: 500
+
+    Sort:
+
+      name: sort
+
+      in: query
+
+      schema:
+
+        type: string
+
+  responses:
+
+    NotFound:
+
+      description: Resource not found
+
+      content:
+
+        application/json:
+
+          schema:
+
+            $ref: '#/components/schemas/ErrorResponse'
+
+    BadRequest:
+
+      description: Invalid request
+
+      content:
+
+        application/json:
+
+          schema:
+
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Unauthorized:
+
+      description: Unauthorized
+
+      content:
+
+        application/json:
+
+          schema:
+
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+
+    ErrorResponse:
+      type: object
+
+    HealthResponse:
+      type: object
+
+    Settings:
+      type: object
+
+    SettingsUpdate:
+      type: object
+
+    CollectorRun:
+      type: object
+
+    CollectorStatus:
+      type: object
+
+    Snapshot:
+      type: object
+
+    SnapshotPage:
+      type: object
+
+    Person:
+      type: object
+
+    PersonPage:
+      type: object
+
+    TimelinePage:
+      type: object
+
+    RelationshipPage:
+      type: object
+
+    SocialGraph:
+      type: object
+
+    AIReport:
+      type: object
+
+    ChatRequest:
+      type: object
+
+    ChatResponse:
+      type: object
+
+    SearchResponse:
+      type: object
