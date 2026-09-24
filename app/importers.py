@@ -215,13 +215,15 @@ def _dispatch(
             rows.append(
                 {
                     **person,
-                    "period_start": item["period_start"],
-                    "period_end": item["period_end"],
-                    "incoming_count": int(item.get("incoming_count", 0)),
-                    "outgoing_count": int(item.get("outgoing_count", 0)),
-                    "active_days": int(item.get("active_days", 0)),
-                    "initiated_by_person": int(item.get("initiated_by_person", 0)),
-                    "initiated_by_me": int(item.get("initiated_by_me", 0)),
+                    "period_start": item.get("period_start"),
+                    "period_end": item.get("period_end"),
+                    # Preserve types until the shared domain validator; int() here
+                    # would silently turn fractional JSON values/bools into counts.
+                    "incoming_count": item.get("incoming_count", 0),
+                    "outgoing_count": item.get("outgoing_count", 0),
+                    "active_days": item.get("active_days", 0),
+                    "initiated_by_person": item.get("initiated_by_person", 0),
+                    "initiated_by_me": item.get("initiated_by_me", 0),
                     "median_reply_minutes": (
                         float(item["median_reply_minutes"])
                         if item.get("median_reply_minutes") not in (None, "")

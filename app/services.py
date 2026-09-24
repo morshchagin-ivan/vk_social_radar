@@ -5,6 +5,7 @@ from typing import Any
 from uuid import uuid4
 
 from .db import get_connection
+from .message_stats import normalize_message_stats
 from . import snapshots
 
 
@@ -123,6 +124,8 @@ def import_snapshot(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def import_message_stats(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    # Validate before any person upsert; keep the existing whole-batch transaction.
+    rows = [normalize_message_stats(raw) for raw in rows]
     imported = 0
     with get_connection() as conn:
         for raw in rows:

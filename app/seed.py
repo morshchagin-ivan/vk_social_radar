@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import date, timedelta
 
 from .db import get_connection
+from .message_stats import normalize_message_stats
 from .snapshots import create_snapshot
 
 
@@ -63,6 +64,12 @@ def seed_demo_data() -> None:
             (ids["Дмитрий Лебедев"], 19, 11, 5, 3, 2, 27.0),
         ]
         for person_id, incoming, outgoing, active_days, initiated_by_person, initiated_by_me, reply in message_rows:
+            stats = normalize_message_stats({
+                "period_start": period_start.isoformat(), "period_end": period_end.isoformat(),
+                "incoming_count": incoming, "outgoing_count": outgoing,
+                "active_days": active_days, "initiated_by_person": initiated_by_person,
+                "initiated_by_me": initiated_by_me,
+            })
             conn.execute(
                 """
                 INSERT INTO message_stats(
@@ -72,13 +79,13 @@ def seed_demo_data() -> None:
                 """,
                 (
                     person_id,
-                    period_start.isoformat(),
-                    period_end.isoformat(),
-                    incoming,
-                    outgoing,
-                    active_days,
-                    initiated_by_person,
-                    initiated_by_me,
+                    stats["period_start"],
+                    stats["period_end"],
+                    stats["incoming_count"],
+                    stats["outgoing_count"],
+                    stats["active_days"],
+                    stats["initiated_by_person"],
+                    stats["initiated_by_me"],
                     reply,
                 ),
             )

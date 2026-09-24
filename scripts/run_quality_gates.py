@@ -104,6 +104,7 @@ CATEGORIES = {
     'Security/privacy (U06)': {'test_privacy'},
     'Quality governance (U07)': {'test_quality_gates'},
     'Local RAG (U08)': {'test_rag'},
+    'Domain validation (U13A)': {'test_message_stats_validation'},
     'Unit/regression': {'test_services', 'test_v02', 'test_v03', 'test_v031',
                         'test_v04', 'test_v041', 'test_v042', 'test_v043_organization_source'},
 }
