@@ -1,0 +1,3 @@
+-r requirements.txt
+# Local YAML parsing for OpenAPI and workflow checks; no external validator.
+PyYAML==6.0.3

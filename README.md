@@ -51,7 +51,7 @@ U09 сохраняет HTTP timeouts 8/120s: retries не гарантируют
 
 ## Architecture evolution / backlog
 
-[Evolution stages](docs/certification/ARCHITECTURE_EVOLUTION.md) и [U01–U17 backlog](docs/certification/05_UPGRADE_BACKLOG.md). U02/U03/U04/U05/U09 завершены в заявленном scope; следующий рекомендуемый implementation step — U07 unified runner/CI, пока PLANNED. Вся Data Architecture не объявляется READY.
+[Evolution stages](docs/certification/ARCHITECTURE_EVOLUTION.md) и [U01–U17 backlog](docs/certification/05_UPGRADE_BACKLOG.md). U02/U03/U04/U05/U09 завершены в заявленном scope; U07 unified runner/fitness IMPLEMENTED, workflow CONFIGURED LOCALLY; следующий рекомендуемый increment — U08, если RAG остаётся в scope. Вся Data Architecture не объявляется READY.
 
 ## Running locally
 
@@ -75,7 +75,9 @@ U09 сохраняет HTTP timeouts 8/120s: retries не гарантируют
 .\run_tests.bat
 ```
 
-Эквивалент: `.venv\Scripts\python.exe -m unittest discover -s tests -v`. U06 standard runner — **171 unittest PASS**: 31 U06 + 23 U04 + 34 U03 + 25 U09 + 26 U05 AI + 14 U02 migration + 18 existing. Отдельно выполнены **8 existing plain functions PASS** из `tests/test_v043_organization_source.py`; стандартный runner по-прежнему их не обнаруживает. Unified runner/CI — U07; **CI отсутствует**.
+Canonical command: **`python scripts/run_quality_gates.py`** (or `.venv\Scripts\python.exe scripts/run_quality_gates.py`). First install `requirements-dev.txt` in the test environment; Node.js 22.14.0 is required for the existing UI helper test. Validated Python: 3.13.2 on Windows. BAT delegates to the same runner and returns its exit code.
+
+U07 local gate: **191 automated tests PASS**, including all eight formerly separate functions and 12 new governance tests. Seven gates and twelve architecture fitness invariants pass; measured initial duration **8.565 seconds**, not an SLA. [Quality reference](docs/certification/QUALITY_GATE_REFERENCE.md) explains exact gates, categories and isolation. [Workflow](.github/workflows/quality-gates.yml) is **CONFIGURED LOCALLY**, remote GitHub Actions **NOT YET VERIFIED**; branch protection **NOT CONFIGURED**.
 
 U02 изолирует DB/storage/backup paths новых и существующих DB tests; CSV test также подменяет импортированный `IMPORT_DIR`. Тесты используют temporary directories, не рабочие БД/imports/profile и не VK/LLM/network. Две прежние ResourceWarning в marker tests `test_v031.py` не являются failures и остаются вне U02. Команды и результаты — [U02 report](docs/certification/U02_SCHEMA_MIGRATION_REPORT.md); [historical coverage limits](docs/certification/03_SDD_CODE_GAP_ANALYSIS.md).
 
@@ -154,3 +156,7 @@ LM Studio URL must use HTTP(S) loopback (localhost normalizes to 127.0.0.1; ::1 
 The Chromium profile is fixed at data/vk_browser_profile; former external profile override is ignored. Diagnostics now contain counters only. On collector start or diagnostic write, recognized direct diagnostic files older than 30 days are pruned; .gitkeep, links, subdirectories, DB, profile, imports and previews are excluded. No cleanup ran against real data during this build. Full erasure and broader retention remain separate work; storage is not encrypted.
 
 Uploads use bounded reads, unique contained basenames and safe formats; ZIP expansion is capped at 100 MiB/1000 members, parsed without extraction. Ordinary API errors omit raw payloads, paths and SQL; UI text is escaped and links reject executable schemes. Run `.venv\Scripts\python.exe -B scripts/check_privacy.py` before committing and `.venv\Scripts\python.exe -B -m unittest discover -s tests -p test_privacy.py -v` for security fixtures. The guard reports file/category only and does not certify all historical or encoded secrets.
+
+## U07 — Unified quality gates
+
+[Report](docs/certification/U07_QUALITY_GATES_CI_REPORT.md) · [Command/gate reference](docs/certification/QUALITY_GATE_REFERENCE.md). One runner checks tracked sensitive artifacts/secrets, syntax/imports, canonical OpenAPI, documentation, the full test suite and measured architecture fitness. Tests use temporary data and mocks; no live VK/LM Studio/Chromium or user database is required. Markdown scenarios remain DOCUMENTED_ONLY; live walkthroughs remain MANUAL and unperformed by this gate. Recommendation only: require PRs and the Quality Gates status for main after observing the first remote run; no repository settings were changed.

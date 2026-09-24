@@ -26,16 +26,16 @@ flowchart LR
   API --> Settings["ai.settings - existing three keys"]
   Settings --> DB
   AI --> DB
-  LMAdapter --> Endpoint["Configured OpenAI-compatible endpoint"]
+  LMAdapter --> Endpoint["Validated loopback endpoint - no proxy or redirects"]
   Endpoint --> LMDefault["LM Studio by default - localhost:1234/v1"]
   Collector --> Preview["In-memory preview and local JSON"]
-  Collector --> Diagnostics["Local HTML PNG JSON diagnostics"]
+  Collector --> Diagnostics["Counter-only diagnostic JSON - 30-day retention"]
   Preview --> PreviewUI["UI preview"]
   PreviewUI --> Save["Explicit user save via FastAPI"]
   Save --> Services
 ```
 
-Configured endpoint — configuration boundary к LM Studio по умолчанию, а не отдельный обязательный proxy. Arbitrary URL разрешён текущим кодом, поэтому диаграмма не гарантирует local-only inference. Diagnostics не импортируются в SQLite; явный save читает текущий in-memory preview, не diagnostics/JSON с диска.
+Configured endpoint — configuration boundary к LM Studio по умолчанию, а не отдельный обязательный proxy. U06 разрешает только parsed loopback URL; remote/LAN endpoints запрещены без opt-in. Diagnostics не импортируются в SQLite; явный save читает текущий in-memory preview, не diagnostics/JSON с диска.
 
 | Boundary | Реальная implementation | Evidence |
 |---|---|---|
@@ -58,3 +58,7 @@ U03 adds snapshots/snapshot_people/snapshot_events and a nullable namespaced peo
 U04 adds typed response/metadata at the existing FastAPI boundary. [Canonical OpenAPI](../../11_OPENAPI.yaml) is exported from app.openapi; [tests](../../tests/test_api_contract.py) check 30 operations/21 frontend call sites and reject drift. No new server, auth gateway, repository, route family or frontend dependency. [Contract evidence](U04_API_CONTRACT_REPORT.md).
 
 U06 boundary: launcher 127.0.0.1 → Host/same-origin middleware → existing API. Settings/composition/LM adapter enforce loopback-only URLs and disable HTTPX proxies/redirects. Collector request routing fails closed; new diagnostics are counter-only with 30-day runtime-triggered cleanup. Dedicated profile, imports and previews use safe local roots; tracked disclosure guard runs offline. No auth service, encryption or remote opt-in. [Evidence](U06_PRIVACY_ACCESS_HARDENING_REPORT.md).
+
+## Development verification boundary — U07
+
+Local Python and the thin BAT wrapper invoke [one runner](../../scripts/run_quality_gates.py). The [GitHub Actions workflow](../../.github/workflows/quality-gates.yml) is configured to invoke the same runner on a Windows worker. These are development checks, not application runtime services. Runner → tracked privacy/syntax/OpenAPI/docs gates → one isolated 191-test suite → measured fitness verdicts. It does not connect to the diagram's user SQLite, VK, browser session or local inference service. Local PASS is verified; remote Actions execution is NOT YET VERIFIED.

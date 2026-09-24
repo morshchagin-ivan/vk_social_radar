@@ -33,7 +33,7 @@ Baseline 1.0 · 2026-09-23. Статусы capability: **IMPLEMENTED** — ко�
 | Export | PLANNED | no export route; preview JSON not export product | local versioned round-trip | [U15](05_UPGRADE_BACKLOG.md), P2 |
 | Scheduler | PLANNED | volatile asyncio jobs not scheduler | only with unattended collection requirement | [U14](05_UPGRADE_BACKLOG.md), P2 |
 | Observability | PARTIAL | diagnostics/status/traces; raw data risk | safe correlated events and metrics | [U06/U11](05_UPGRADE_BACKLOG.md) |
-| CI/CD | PLANNED | local bat scripts only | minimal reproducible test/release gate | [U07](05_UPGRADE_BACKLOG.md) |
+| CI / quality governance | IMPLEMENTED runner/fitness; workflow CONFIGURED LOCALLY | [191 tests, 7 gates, 12 fitness invariants](U07_QUALITY_GATES_CI_REPORT.md), one local/Actions command | remote run NOT YET VERIFIED; branch protection NOT CONFIGURED; no deployment pipeline | U07 locally complete |
 | Privacy hardening | IMPLEMENTED bounded U06 / PARTIAL overall assurance | 31 security tests, tracked guard; no real data touched | operator/debug/history/full-erasure limitations remain; auth/encryption absent | U06 complete; U07/U11/U13 separate |
 | Distributed infrastructure / tenancy / federated training | NOT_PLANNED | no current requirement/load evidence | reconsider only on changed requirements | none; [rationale](ARCHITECTURAL_PATTERNS.md) |
 
@@ -45,4 +45,6 @@ U03: 34 new tests; 117 standard unittest + 8 additional functions PASS. CREATING
 
 U04: **Contract Governance IMPLEMENTED; current API drift RESOLVED**. [Canonical runtime OpenAPI](../../11_OPENAPI.yaml), [inventory](U04_RUNTIME_API_INVENTORY.md) and [report](U04_API_CONTRACT_REPORT.md): 29 public + 1 shell, 21 frontend calls, 23 new tests; 140 unittest + 8 additional PASS. Auth/RAG/Graph/Export remain unimplemented; full CI is U07.
 
-U06 adds explicit local privacy/access controls, not application login or encrypted storage. Latest gate: **171 unittest + 8 additional PASS**. [Threat model](THREAT_MODEL.md), [classification](DATA_CLASSIFICATION.md), [report](U06_PRIVACY_ACCESS_HARDENING_REPORT.md).
+U06 adds explicit local privacy/access controls, not application login or encrypted storage. Historical U06 gate: **171 unittest + 8 additional PASS**. [Threat model](THREAT_MODEL.md), [classification](DATA_CLASSIFICATION.md), [report](U06_PRIVACY_ACCESS_HARDENING_REPORT.md).
+
+U07 authoritative evidence: **191 standard-discoverable tests PASS**; no separate plain functions remain. [Quality reference](QUALITY_GATE_REFERENCE.md) distinguishes AUTOMATED, MANUAL and DOCUMENTED_ONLY checks. Remote CI and branch protection are not claimed complete.

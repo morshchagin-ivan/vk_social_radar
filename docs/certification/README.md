@@ -1,6 +1,6 @@
 # VK Social Radar — Certification Architecture Baseline
 
-**Baseline:** 1.0 · **Updated:** 2026-09-24 · **Repository:** `C:\Developments\Javascript\VK` · **Runtime version:** 0.4.2. U06 build uses `certification/architecture-upgrade` on U04; exact revisions/tags in the [U06 report](U06_PRIVACY_ACCESS_HARDENING_REPORT.md).
+**Baseline:** 1.0 · **Updated:** 2026-09-24 · **Repository:** VK Social Radar · **Runtime version:** 0.4.2. U07 build uses `certification/architecture-upgrade` on U06; protected revisions/tags are retained in the build reports.
 
 This repository contains a working MVP and a documented target architecture. Target components are never presented as implemented unless confirmed by code and tests.
 
@@ -50,6 +50,10 @@ Audit от 2026-09-23: **18 unittest passed + 8 existing plain functions passed 
 
 Working MVP → Architecture Audit → Known Gaps → ADR → Target Architecture → Prioritized Upgrade Backlog → Controlled Evolution.
 
-[Evolution](ARCHITECTURE_EVOLUTION.md) связывает U01–U13 с acceptance evidence. Latest U06 gate: **171 unittest + 8 additional functions PASS**, no network/user DB writes; [report](U06_PRIVACY_ACCESS_HARDENING_REPORT.md). Next recommendation only: **U07 unified runner/CI**. For operation use [root README](../../README.md); the [Defense Guide](DEFENSE_GUIDE.md) retains baseline-era context.
+[Evolution](ARCHITECTURE_EVOLUTION.md) связывает U01–U13 с acceptance evidence. Historical U06 gate: **171 unittest + 8 additional functions PASS**, no network/user DB writes; [report](U06_PRIVACY_ACCESS_HARDENING_REPORT.md). U07 now unifies those gates. For operation use [root README](../../README.md); the [Defense Guide](DEFENSE_GUIDE.md) retains baseline-era context.
 
-U06 now supplies bounded privacy/access controls: [security status](SECURITY_PRIVACY_STATUS.md), [threat model](THREAT_MODEL.md), [classification](DATA_CLASSIFICATION.md), [report](U06_PRIVACY_ACCESS_HARDENING_REPORT.md). Latest gate: **171 unittest + 8 additional PASS**; no network/real DB/profile modification.
+U06 supplies bounded privacy/access controls: [security status](SECURITY_PRIVACY_STATUS.md), [threat model](THREAT_MODEL.md), [classification](DATA_CLASSIFICATION.md), [report](U06_PRIVACY_ACCESS_HARDENING_REPORT.md). Its historical gate was **171 unittest + 8 additional PASS**; no network/real DB/profile modification.
+
+## Current quality evidence — U07
+
+**191 automated tests PASS**, all seven gates and twelve architecture fitness invariants PASS. The former 171+8 split is closed. Canonical command: `python scripts/run_quality_gates.py`; [reference](QUALITY_GATE_REFERENCE.md), [U07 report](U07_QUALITY_GATES_CI_REPORT.md). Workflow CONFIGURED LOCALLY, remote GitHub Actions NOT YET VERIFIED, branch protection NOT CONFIGURED. Historical build counts/recommendations above retain their milestone context; current next recommendation only is U08 if RAG remains in scope.

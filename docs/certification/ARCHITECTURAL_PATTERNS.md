@@ -4,7 +4,7 @@ Baseline 1.0 + U05/U09 · 2026-09-23. Status starts from the historical [audit v
 
 | Pattern | Status | Problem | Current implementation | Target | Evidence / Backlog |
 |---|---|---|---|---|---|
-| Local-first | PARTIAL | local control/privacy | local bind/files/SQLite; arbitrary LLM URL | enforced local inference/privacy | [ADR-001](../adr/ADR-001-local-first-architecture.md); U06 |
+| Local-first | IMPLEMENTED bounded U06 controls; overall assurance PARTIAL | local control/privacy | loopback/Host/Origin, local-only LLM, minimized diagnostics and safe paths | broader operator/history/erasure assurance remains open | [ADR-001](../adr/ADR-001-local-first-architecture.md), [U06](U06_PRIVACY_ACCESS_HARDENING_REPORT.md) |
 | Adapter | IMPLEMENTED for LM Studio; PARTIAL elsewhere | isolate external protocols | LMStudioProvider implements LLMProvider, owns HTTP/extraction/errors; browser/file wrappers remain concrete | browser/persistence adapters still planned | [LM adapter](../../app/ai/providers/lmstudio.py), [contract tests](../../tests/test_ai_provider.py); U05 completed / U10/U12 planned |
 | ACL | PARTIAL | external DOM/raw→internal data | cleaners and dict normalization | typed identity/result boundary | [importers](../../app/importers.py); U10/U13 |
 | Pipeline | PARTIAL | staged transformation | collect→preview→INCOMPLETE observation; declared import→atomic COMPLETE source→derived pair events; AI separate | validated run→snapshot→derived data→retrieval | [services](../../app/services.py); U03/U08 |
@@ -45,4 +45,8 @@ The requested list contains infrastructure technologies as well as architectural
 
 U03 uses immutable state snapshots with derived, rebuildable membership diffs/events. It is **not Event Sourcing**. Mutable people remain convenience/current records; message_stats, AI inputs and legacy event names remain outside immutable reproduction. 34 U03 behavior/migration tests PASS.
 
-U04 implements **Contract Governance** for the current runtime: generated canonical OpenAPI plus semantic route/schema/security/frontend checks and synthetic response fixtures. [Evidence](U04_API_CONTRACT_REPORT.md). This does not implement global DIP, CI, authentication or target API resources.
+U04 implements **Contract Governance** for the current runtime: generated canonical OpenAPI plus semantic route/schema/security/frontend checks and synthetic response fixtures. [Evidence](U04_API_CONTRACT_REPORT.md). U04 did not implement global DIP, authentication or target API resources. U07 now supplies local quality governance and an unverified remote CI configuration.
+
+## U07 executable architecture fitness
+
+**IMPLEMENTED:** [runner](../../scripts/run_quality_gates.py) derives twelve invariant verdicts from successful tests actually executed in one discovery. DB version/idempotency, immutable/complete snapshot rules, provider DIP/transport boundary, resilience wiring/determinism, API drift, privacy and UI checks have stable FITNESS IDs. [Reference](QUALITY_GATE_REFERENCE.md) maps each to concrete evidence. This is executable governance, not a new runtime design pattern or proof of all target architecture. CI workflow is CONFIGURED LOCALLY; remote CI remains NOT YET VERIFIED.

@@ -30,15 +30,15 @@ flowchart TD
   Provider --> Resilience["IMPLEMENTED: Generation retry and Circuit Breaker - U09"]
   Resilience --> LMAdapter["IMPLEMENTED: LM Studio Adapter - U05"]
   LMAdapter --> LM["IMPLEMENTED: LM Studio HTTP integration"]
-  Gates["PLANNED: Quality Gates - U07"] --> ContractGate["IMPLEMENTED: Runtime contract drift gate - U04"]
+  Gates["IMPLEMENTED: Local Quality Gates - U07"] --> ContractGate["IMPLEMENTED: Runtime contract drift gate - U04"]
   Gates --> TestGate["PARTIAL: Behavior tests"]
   Gates --> Eval["PLANNED: AI retrieval evaluation"]
   classDef implemented fill:#dcfce7,stroke:#166534,color:#111827
   classDef partial fill:#fef3c7,stroke:#92400e,color:#111827
   classDef planned fill:#e0e7ff,stroke:#4338ca,color:#111827
-  class UI,API,ContractGate,DB,LM,Provider,LMAdapter,Resilience,Snapshot,Diff implemented
+  class UI,API,ContractGate,DB,LM,Provider,LMAdapter,Resilience,Snapshot,Diff,Gates implemented
   class App,Orchestrator,VKAdapter,ACL,Analytics,AI,TestGate partial
-  class Ports,SQLAdapter,Strategies,Run,Index,Retrieval,Context,Gates,Eval planned
+  class Ports,SQLAdapter,Strategies,Run,Index,Retrieval,Context,Eval planned
 ```
 
 U02 уже реализует безопасную schema migration; U03 реализует relation Snapshot и derived membership events; persisted CollectorRun, полный message corpus и application persistence ports остаются target. На схеме не развёрнуты все CRUD стрелки. В target source snapshots неизменяемы, derived metrics/index/reports версионируются отдельно. Валидное полностью наблюдённое пустое состояние отличается от неудачного/неполного сбора; ADR-003/U03 заменяет blanket empty rejection из legacy task T018 поддержкой явно подтверждённого пустого состояния.
@@ -52,3 +52,5 @@ U03 implementation is narrower than the full target chain: relation imports can 
 U04 implemented current contract governance only: canonical `/api`, no fictitious auth or target endpoints. Future API resources remain planned; full CI/unified runner remains U07. [U04 evidence](U04_API_CONTRACT_REPORT.md).
 
 Local application authentication and encryption are not implemented by U06. Its tested local controls do not promote RAG, Graph, Export or multi-user capabilities. [Security status](SECURITY_PRIVACY_STATUS.md).
+
+U07 runner/architecture fitness are now IMPLEMENTED for current scope; [workflow](../../.github/workflows/quality-gates.yml) is CONFIGURED LOCALLY and remote execution NOT YET VERIFIED. Future retrieval evaluations and broader live/target behavior tests remain PLANNED. No remote PASS, branch protection or deployment claim is inferred from the diagram.

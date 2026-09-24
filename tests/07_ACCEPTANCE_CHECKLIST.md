@@ -1,3 +1,8 @@
+> **Current U07 automated evidence:** 191 discoverable tests PASS via `python scripts/run_quality_gates.py`; seven mandatory gates and twelve architecture fitness invariants PASS. [Quality reference](../docs/certification/QUALITY_GATE_REFERENCE.md), [U07 report](../docs/certification/U07_QUALITY_GATES_CI_REPORT.md).
+> **AUTOMATED:** temporary SQLite/migration/snapshot, fake AI/resilience, in-process API/smoke, privacy/UI helpers, architecture and governance checks.
+> **MANUAL / NOT RUN:** live VK login/Chromium/LM Studio and visual UI walkthroughs. **DOCUMENTED_ONLY:** target RAG/Graph/Export/Scheduler and remaining Markdown scenarios below.
+> CI workflow is CONFIGURED LOCALLY; remote Actions NOT YET VERIFIED. Branch protection NOT CONFIGURED. The historical specification below is not a claim that every target acceptance box has been implemented.
+
 > **Verification status: TARGET TEST SPECIFICATION / PLANNED CHECKS.**
 > PASS labels, quality thresholds and acceptance boxes below describe intended checks, not completed runtime evidence.
 > Verified results: [Certification audit](../docs/certification/00_REPOSITORY_AS_IS.md). Current scope: [Architecture Status](../docs/certification/ARCHITECTURE_STATUS.md).

@@ -38,3 +38,26 @@ U03 completeness is evidence-based: declared full-set imports may become COMPLET
 | Capability | Requirement / decision | Current implementation | Evidence | Status / scope |
 |---|---|---|---|---|
 | Local privacy/access | Privacy/local single-user principles; ADR-001; U06 | local Host/Origin; loopback-only LLM; safe errors/diagnostics/imports/UI; tracked guard | [31 SEC tests](../../tests/test_privacy.py), [report](U06_PRIVACY_ACCESS_HARDENING_REPORT.md); U04 contract still PASS | IMPLEMENTED bounded controls; no auth/encryption/zero-trust claim |
+
+## U07 executable invariant → test → gate mapping
+
+All rows below are **AUTOMATED** by the canonical runner, which is also the single command in the locally configured Actions workflow. Verdicts use successful test IDs from the same run; [reference](QUALITY_GATE_REFERENCE.md) and the [registry](../../scripts/run_quality_gates.py) contain exact method IDs. Remote CI is NOT YET VERIFIED.
+
+| Invariant | Automated test module | Canonical/CI gate |
+|---|---|---|
+| FITNESS-DB-001 current version/idempotency | test_migrations.py; test_snapshots.py | Automated regression → architecture fitness |
+| FITNESS-SNAPSHOT-001 immutable history | test_snapshots.py | Automated regression → architecture fitness |
+| FITNESS-SNAPSHOT-002 incomplete/failed cannot become current | test_snapshots.py | Automated regression → architecture fitness |
+| FITNESS-AI-001 use case depends on provider port | test_ai_provider.py | Automated regression → architecture fitness |
+| FITNESS-AI-002 adapter transport-only | test_ai_provider.py; test_quality_gates.py | Automated regression → architecture fitness |
+| FITNESS-RES-001 wrapper composition/imports | test_llm_resilience.py | Automated regression → architecture fitness |
+| FITNESS-RES-002 deterministic fake delays | test_llm_resilience.py | Automated regression with sleep guard → architecture fitness |
+| FITNESS-API-001 canonical/runtime/UI/security contract | test_api_contract.py | OpenAPI YAML/export + regression → architecture fitness |
+| FITNESS-SEC-001 fixed loopback | test_privacy.py | Automated regression → architecture fitness |
+| FITNESS-SEC-002 remote endpoint denial | test_privacy.py | Automated regression → architecture fitness |
+| FITNESS-SEC-003 sensitive ignored/untracked paths | test_privacy.py | Sensitive artifacts/secret guard + regression → architecture fitness |
+| FITNESS-UI-001 unsafe rendering protection | test_privacy.py | Node syntax + regression → architecture fitness |
+
+Module links: [migration](../../tests/test_migrations.py), [snapshot](../../tests/test_snapshots.py), [AI](../../tests/test_ai_provider.py), [resilience](../../tests/test_llm_resilience.py), [API](../../tests/test_api_contract.py), [privacy](../../tests/test_privacy.py), [governance](../../tests/test_quality_gates.py). CI-001–008 and four additional governance checks are AUTOMATED. The eight [organization-source tests](../../tests/test_v043_organization_source.py) are now discoverable and retain their limited classifier/source-check scope.
+
+**MANUAL / NOT RUN:** live VK/session/Chromium/LM Studio and visual browser walkthroughs. **DOCUMENTED_ONLY:** test Markdown 01–07 scenarios not mapped to executable methods, plus target RAG/Graph/Export/Scheduler acceptance. Current authoritative total: **191**; Markdown checks and the twelve derived fitness verdicts are not added to that test count.
