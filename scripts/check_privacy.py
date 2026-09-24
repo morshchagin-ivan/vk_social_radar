@@ -39,7 +39,7 @@ def check(root=ROOT):
             findings.append((name,'tracked-filesystem-link'))
             continue
         if not path.is_file(): continue
-        if path.suffix.lower() in {'.py','.js','.html','.md','.yaml','.yml','.toml','.json','.bat','.ps1','.sh'}:
+        if path.suffix.lower() in {'.py','.js','.html','.md','.yaml','.yml','.toml','.json','.jsonl','.bat','.ps1','.sh'}:
             # Fixture placeholders are synthetic, but real-format keys/tokens still fail.
             findings.extend((name,category) for category in secret_categories(path.read_text(encoding='utf-8',errors='replace')))
         if path.suffix.lower() == '.zip':

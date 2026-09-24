@@ -10,7 +10,7 @@ flowchart LR
   Provider --> Resilience["IMPLEMENTED: LLM Resilience - U09"]
   Migration --> Data["IMPLEMENTED: Relation Source Integrity - U03"]
   Data --> Boundaries["IMPLEMENTED: API Contract - U04"]
-  Boundaries --> RAG["AI Retrieval and RAG - U08"]
+  Boundaries --> RAG["IMPLEMENTED: Lexical local RAG - U08"]
   RAG --> Reliability["PLANNED: Measured NFR and Observability - U11"]
   Resilience --> Reliability
   Reliability --> Target["Target Architecture"]
@@ -34,16 +34,16 @@ flowchart LR
 | U04 API | canonical runtime contract/errors/security truth | enforceable API evolution | [23 tests/report](U04_API_CONTRACT_REPORT.md); 30 operations/21 UI calls, exact generated drift gate; `/api` preserved | IMPLEMENTED; authentication remains U06 |
 | U05 provider | отвязать AI use cases от vendor HTTP | заменяемость и test seam | [26 tests/report](U05_LLM_PROVIDER_REPORT.md): fake + LM adapter contracts, local validation, API, import fitness | IMPLEMENTED at AI boundary; global DIP PARTIAL |
 | U06 privacy | bounded local trust policy and minimized artifacts | testable deny-by-default inference/browser boundary | [31 tests/report](U06_PRIVACY_ACCESS_HARDENING_REPORT.md); 171 + 8 PASS, tracked guard, safe diagnostics/paths/UI | IMPLEMENTED bounded controls; overall assurance partial |
-| U07 quality | единый runner + CI configuration | green result reflects executable invariants | [191 tests / 7 gates / 12 fitness functions](U07_QUALITY_GATES_CI_REPORT.md), all eight legacy functions discoverable | runner IMPLEMENTED; workflow CONFIGURED LOCALLY; remote NOT YET VERIFIED |
-| U08 retrieval | локальные grounded report/Q&A | найденный контекст с source evidence | synthetic labelled corpus, retrieval relevance, citations, no-evidence behavior, freshness scope | PLANNED / runtime NO_RAG |
+| U07 quality | unified runner + shared CI command | successful results reflect executable invariants | [historical U07: 191 tests/12 invariants](U07_QUALITY_GATES_CI_REPORT.md); current U08: 222/18 | IMPLEMENTED local; U07 remote success owner-reported, U08 remote unverified |
+| U08 retrieval | bounded internal local Q&A | stable source evidence and no-evidence bypass | [31 tests, 18-case evaluation](U08_LOCAL_RAG_REPORT.md); Recall@3/MRR/no-evidence 1.0; baseline tie | IMPLEMENTED — STRUCTURED_RAG—LEXICAL |
 | U09 resilience | bounded generation retry + breaker | transient recovery, fail-fast outage gate | [25 tests/report](U09_LLM_RESILIENCE_REPORT.md): clocks/randomness, classifier, bounded sleeps, state/probe/concurrency, API; 83 + 8 regressions PASS | IMPLEMENTED; total deadline NOT enforced |
 | U10 strategies | replaceable parsers для existing surfaces | ограничить DOM-change impact | fixture extraction и substitution без изменения orchestration | PLANNED |
 | U11 NFR/observability | измеримые ограничения и safe events | решения основаны на measurements | hardware/dataset-labelled measurements, latency/error counters, retention policy; [NFR](NFR_BASELINE.md) | quantitative baseline PLANNED |
 | U12 persistence ports | убрать SQL из selected use cases | testability и cohesion | port fake tests + SQLite adapter contract; не interface для каждой функции | PLANNED |
 | U13 validation/demo | разделить synthetic/user data и external identity | data provenance и input safety | explicit demo mode; identity/collision/date/ZIP budget tests; org-save semantics | PLANNED |
 
-[Backlog U01–U17](05_UPGRADE_BACKLOG.md) остаётся исходным приоритетным списком. P2: U14 scheduling/durable jobs, U15 local export/restore, U16 graph/scores, U17 search/retrieval evolution. U02/U03/U04/U05/U09 закрыты в заявленном scope; U06/U07 также реализованы в bounded/local scope; следующий рекомендуемый increment — U08 при сохранении RAG в scope, без автоматического начала. RAG NO_RAG/PLANNED, Ollama/fallback NO. [Baseline report](BASELINE_UPGRADE_REPORT.md) остаётся историческим; новые результаты находятся в отдельных build reports.
+[Backlog U01–U17](05_UPGRADE_BACKLOG.md): U02/U03/U04/U05/U06/U07/U08/U09 complete within report scope. U08 is lexical service-only; full Chat and semantic retrieval remain planned. Next recommendation only: U10 parser strategies; U11 measured NFR and U17 broader retrieval remain separate. [Historical baseline](BASELINE_UPGRADE_REPORT.md) is unchanged.
 
-U06 is IMPLEMENTED for its bounded local trust model: loopback/Host/Origin and local-only inference, minimized diagnostics, retention and Git/path/UI safeguards. Authentication/encryption remain absent; overall privacy assurance remains partial. [31 tests/report](U06_PRIVACY_ACCESS_HARDENING_REPORT.md). U07 unified runner/fitness is now IMPLEMENTED; remote CI is NOT YET VERIFIED.
+U06 is IMPLEMENTED for its bounded local trust model: loopback/Host/Origin and local-only inference, minimized diagnostics, retention and Git/path/UI safeguards. Authentication/encryption remain absent; overall privacy assurance remains partial. [31 tests/report](U06_PRIVACY_ACCESS_HARDENING_REPORT.md). U07 unified runner/fitness is now IMPLEMENTED; Prior U07 remote Actions success is owner-reported; this U08 revision is locally verified only and has not been pushed. Branch settings are unchanged.
 
-U07 completes the local unified gate; first remote workflow observation and main branch protection remain separate user-controlled follow-ups. [Reference](QUALITY_GATE_REFERENCE.md).
+Prior U07 remote Actions success is owner-reported; this U08 revision is locally verified only and has not been pushed. Branch settings are unchanged. [Quality reference](QUALITY_GATE_REFERENCE.md).

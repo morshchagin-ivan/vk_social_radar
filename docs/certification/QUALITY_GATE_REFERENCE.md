@@ -1,6 +1,6 @@
 # Quality Gate Reference
 
-U07 · 2026-09-24 · Unified runner and architecture fitness **IMPLEMENTED**. Workflow **CONFIGURED LOCALLY**; remote GitHub Actions **NOT YET VERIFIED**. Branch protection **NOT CONFIGURED**.
+U07 + U08 · 2026-09-24 · Runner and fitness IMPLEMENTED. Prior U07 remote Actions success is owner-reported; this U08 revision is locally verified only and has not been pushed. Branch settings are unchanged.
 
 ## Canonical command and environment
 
@@ -31,11 +31,11 @@ Evidence environment: Windows, **Python 3.13.2**, **Node.js 22.14.0**. The workf
 | 4 | OpenAPI | PyYAML and JSON parse, FastAPI structural model, exact canonical/runtime export comparison; U04 semantic tests also run below |
 | 5 | Documentation | Relative file links/reference definitions, containment/existence, accidental developer absolute paths and fence/Mermaid structural sanity |
 | 6 | Automated regression | One unittest discovery/execution; measured per-module categories; duplicate, empty, omitted module/plain-function and category drift detection |
-| 7 | Architecture fitness | Twelve mandatory invariants derived from successful test IDs recorded in this same run; no repeated test execution |
+| 7 | Architecture fitness | Eighteen mandatory invariants (including six U08 RAG checks) derived from successful test IDs recorded in this same run; no repeated test execution |
 
 Exit **0** means every mandatory gate passed; any failure exits **1**, stopping dependent gates. Missing/skipped/expected-failing/unexpected-successful tests cannot satisfy the mandatory suite or a fitness invariant. Interruptions also terminate unsuccessfully. No `continue-on-error`, optional regression suite or historical hardcoded test total is used. Summary counts come from discovery, execution and result callbacks; durations use a monotonic performance clock.
 
-The initial full local U07 run measured **191 tests PASS**, **7 gates PASS**, **12 fitness invariants PASS**, **8.565 seconds** overall (6.990 seconds for tests). This is an observation, not an SLA. Historical U06 had 171 discovered tests plus 8 separately called functions. U07 converts those eight to `OrganizationSourceTests` without dropping assertions and adds 12 governance tests: one authoritative discovery now includes all 191. Future totals change automatically when tests change.
+The initial full local U07 run measured **191 tests PASS**, **7 gates PASS**, **12 fitness invariants PASS**, **8.565 seconds** overall (6.990 seconds for tests). This is an observation, not an SLA. Historical U06 had 171 discovered tests plus 8 separately called functions. U07 converts those eight to `OrganizationSourceTests` without dropping assertions and adds 12 governance tests: that U07 discovery included all 191; current U08 adds 31 RAG tests for 222. Future totals change automatically when tests change.
 
 ## Architecture fitness registration
 
@@ -69,7 +69,7 @@ These reuse behavior/import tests instead of replacing them with marker-only ass
 | Security/privacy | AUTOMATED | 31 tests; synthetic secrets/data, temp retention/profile/import roots, mocked browser routes, actual Node helpers |
 | Quality governance | AUTOMATED | 12 helper/fitness tests including CI-001–008; only tiny synthetic suites, never recursive full-suite execution |
 | Live VK/login/Chromium/LM Studio and visual UI walkthrough | MANUAL, NOT RUN | Separate authorized environment/session required; excluded from the mandatory gate |
-| Target RAG/Graph/Export/Scheduler cases in Markdown 01–07 | DOCUMENTED_ONLY | Specifications are not executable tests or completed acceptance evidence |
+| Broader Chat/Graph/Export/Scheduler cases in Markdown 01–07 | DOCUMENTED_ONLY | Specifications are not executable tests or completed acceptance evidence |
 
 All existing temp-DB and mocked-transport fixtures remain in place. HTTP/network guards in AI/API/privacy/snapshot fixtures remain active. Import smoke prohibits DB connect, DNS/connection, server run and Playwright start. The runner forbids actual `time.sleep` and positive `asyncio.sleep`; zero-delay async yields are allowed for AnyIO scheduling. Concurrency tests use event synchronization with safety timeouts, not artificial waits. No user DB, login session, browser executable or live inference is needed. Setup actions/pip require ordinary dependency download access; **the tests themselves use no external network**. No test data/artifact upload step exists.
 
@@ -81,7 +81,7 @@ All existing temp-DB and mocked-transport fixtures remain in place. HTTP/network
 
 ## Workflow and branch protection
 
-[quality-gates.yml](../../.github/workflows/quality-gates.yml) runs on `pull_request` and pushes to `main` or `certification/architecture-upgrade`. Steps: checkout → Python → Node → runtime/dev dependency install → canonical runner. The built-in checkout token has `contents: read` and persisted credentials disabled. No PAT/VK/LLM/cloud/browser secret is needed. A configured workflow is not evidence of a successful remote run: **remote verified = NO**, and no push is part of U07.
+[quality-gates.yml](../../.github/workflows/quality-gates.yml) runs on `pull_request` and pushes to `main` or `certification/architecture-upgrade`. Steps: checkout → Python → Node → runtime/dev dependency install → canonical runner. The built-in checkout token has `contents: read` and persisted credentials disabled. No PAT/VK/LLM/cloud/browser secret is needed. A configured workflow is not evidence of a successful remote run: Prior U07 remote Actions success is owner-reported; this U08 revision is locally verified only and has not been pushed. Branch settings are unchanged.
 
 Recommendation only: protect `main`, require pull requests and the **Quality Gates** job status after the first observed workflow run. **Branch protection is NOT CONFIGURED**; no GitHub API/settings calls were made.
 
@@ -99,3 +99,18 @@ python -m unittest discover -s tests -p test_api_contract.py -v
 Regenerate an intentionally changed contract with `python scripts/export_openapi.py`, review its diff, then run the canonical command. The gate never regenerates drift away automatically.
 
 [U07 report](U07_QUALITY_GATES_CI_REPORT.md) · [Traceability](TRACEABILITY_MATRIX.md) · [Checklist](CERTIFICATION_CHECKLIST.md).
+
+## U08 additions
+
+Current run: **222 tests, seven gates, 18 fitness invariants PASS**. Local RAG category: 31 tests. Critical import smoke includes corpus/retrieval/service; tracked privacy scanning includes JSONL. [U08 report](U08_LOCAL_RAG_REPORT.md) and [evaluation](RAG_EVALUATION.md) contain measured results and limitations.
+
+| Invariant | Automated evidence module | Property |
+|---|---|---|
+| FITNESS-RAG-001 | test_rag | ports, no concrete transport/retriever dependency |
+| FITNESS-RAG-002 | test_rag | derived rebuild/removal |
+| FITNESS-RAG-003 | test_rag | no-evidence bypass |
+| FITNESS-RAG-004 | test_rag | context-only citations and output validation |
+| FITNESS-RAG-005 | test_rag | Recall@3 ≥ 0.90, MRR ≥ 0.90, no-evidence = 1.0 |
+| FITNESS-RAG-006 | test_rag | synthetic labelled fixture |
+
+These verdicts reuse executed test outcomes and do not add to the test total. No workflow branch or alternate CI command was added.

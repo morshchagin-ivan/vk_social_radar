@@ -1,6 +1,6 @@
 # VK Social Radar — Certification Architecture Baseline
 
-**Baseline:** 1.0 · **Updated:** 2026-09-24 · **Repository:** VK Social Radar · **Runtime version:** 0.4.2. U07 build uses `certification/architecture-upgrade` on U06; protected revisions/tags are retained in the build reports.
+**Baseline:** 1.0 · **Updated:** 2026-09-24 · **Repository:** VK Social Radar · **Runtime version:** 0.4.2. U08 build uses `certification/architecture-upgrade` on protected U07; protected revisions/tags are retained in the build reports.
 
 This repository contains a working MVP and a documented target architecture. Target components are never presented as implemented unless confirmed by code and tests.
 
@@ -16,7 +16,7 @@ Python/FastAPI и static HTML/CSS/vanilla JS; SQLite; Playwright с отдель
 
 ## Target architecture
 
-[Target C4](C4_TARGET.md): broader source corpus, contracts, persistence ports, replaceable parsers and evaluated retrieval remain target. [Patterns](ARCHITECTURAL_PATTERNS.md): Provider, immutable relation Snapshot and Retry/Backoff/Jitter/Circuit Breaker are IMPLEMENTED in their tested scope. Message analytics/AI are not snapshot-reproducible; runtime RAG = **NO_RAG**.
+[Target C4](C4_TARGET.md): broader source corpus, contracts, persistence ports, replaceable parsers and broader chat/semantic retrieval remain target. [Patterns](ARCHITECTURAL_PATTERNS.md): Provider, immutable relation Snapshot and Retry/Backoff/Jitter/Circuit Breaker are IMPLEMENTED in their tested scope. Message analytics/AI are not snapshot-reproducible; runtime RAG = **STRUCTURED_RAG—LEXICAL**, internal relation-source service.
 
 Graph, Scheduler, Export — более поздний roadmap U14–U16; vector DB/hybrid/RRF/reranker не являются обязательствами baseline. Существующие target SDD сохранены с banner. [Архив прежнего SDD](../../specs/001-vk-profile-analysis/Artefacts.zip) — неизменённый исторический target bundle; его текст не является implementation evidence. [Feature index](../../specs/001-vk-profile-analysis/README.md) объясняет статус копий и старых задач.
 
@@ -54,6 +54,8 @@ Working MVP → Architecture Audit → Known Gaps → ADR → Target Architectur
 
 U06 supplies bounded privacy/access controls: [security status](SECURITY_PRIVACY_STATUS.md), [threat model](THREAT_MODEL.md), [classification](DATA_CLASSIFICATION.md), [report](U06_PRIVACY_ACCESS_HARDENING_REPORT.md). Its historical gate was **171 unittest + 8 additional PASS**; no network/real DB/profile modification.
 
-## Current quality evidence — U07
+## Current quality evidence — U08
 
-**191 automated tests PASS**, all seven gates and twelve architecture fitness invariants PASS. The former 171+8 split is closed. Canonical command: `python scripts/run_quality_gates.py`; [reference](QUALITY_GATE_REFERENCE.md), [U07 report](U07_QUALITY_GATES_CI_REPORT.md). Workflow CONFIGURED LOCALLY, remote GitHub Actions NOT YET VERIFIED, branch protection NOT CONFIGURED. Historical build counts/recommendations above retain their milestone context; current next recommendation only is U08 if RAG remains in scope.
+**U08 current evidence:** STRUCTURED_RAG—LEXICAL, internal service only; 31 RAG tests, 222 total tests, seven gates and 18 fitness invariants PASS. [Report](U08_LOCAL_RAG_REPORT.md) · [Evaluation](RAG_EVALUATION.md). Prior U07 remote Actions success is owner-reported; this U08 revision is locally verified only and has not been pushed. Branch settings are unchanged.
+
+[ADR-006](../adr/ADR-006-rag-architecture.md) is implemented to lexical maturity only: persisted corpus, stable IDs, rebuildable index, BM25/filtering, bounded context, validated citations and no-evidence bypass. Person Insight stays fixed-context; no chat API/UI or embeddings. Next recommendation only: U10.

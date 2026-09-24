@@ -19,12 +19,12 @@ flowchart TD
   Run --> Snapshot["IMPLEMENTED: Immutable relation Snapshot - U03"]
   Snapshot --> Diff["IMPLEMENTED: Relation membership diff - U03"]
   Diff --> Analytics["PARTIAL: Timeline and Analytics"]
-  Snapshot --> Index["PLANNED: Local ingestion and index - U08"]
+  Snapshot --> Index["IMPLEMENTED: Relation corpus and RAM index - U08"]
   Analytics --> Index
   App --> AI["PARTIAL: AI Use Cases"]
-  AI --> Retrieval["PLANNED: Retrieval - U08"]
+  AI --> Retrieval["IMPLEMENTED: Lexical retrieval - U08"]
   Index --> Retrieval
-  Retrieval --> Context["PLANNED: Context Builder and citations"]
+  Retrieval --> Context["IMPLEMENTED: Bounded context and citations - U08"]
   Context --> Provider["IMPLEMENTED: LLM Provider Port - U05"]
   AI -->|"current person insight"| Provider
   Provider --> Resilience["IMPLEMENTED: Generation retry and Circuit Breaker - U09"]
@@ -32,20 +32,20 @@ flowchart TD
   LMAdapter --> LM["IMPLEMENTED: LM Studio HTTP integration"]
   Gates["IMPLEMENTED: Local Quality Gates - U07"] --> ContractGate["IMPLEMENTED: Runtime contract drift gate - U04"]
   Gates --> TestGate["PARTIAL: Behavior tests"]
-  Gates --> Eval["PLANNED: AI retrieval evaluation"]
+  Gates --> Eval["IMPLEMENTED: Synthetic retrieval evaluation - U08"]
   classDef implemented fill:#dcfce7,stroke:#166534,color:#111827
   classDef partial fill:#fef3c7,stroke:#92400e,color:#111827
   classDef planned fill:#e0e7ff,stroke:#4338ca,color:#111827
-  class UI,API,ContractGate,DB,LM,Provider,LMAdapter,Resilience,Snapshot,Diff,Gates implemented
+  class UI,API,ContractGate,DB,LM,Provider,LMAdapter,Resilience,Snapshot,Diff,Gates,Index,Retrieval,Context,Eval implemented
   class App,Orchestrator,VKAdapter,ACL,Analytics,AI,TestGate partial
-  class Ports,SQLAdapter,Strategies,Run,Index,Retrieval,Context,Eval planned
+  class Ports,SQLAdapter,Strategies,Run planned
 ```
 
 U02 уже реализует безопасную schema migration; U03 реализует relation Snapshot и derived membership events; persisted CollectorRun, полный message corpus и application persistence ports остаются target. На схеме не развёрнуты все CRUD стрелки. В target source snapshots неизменяемы, derived metrics/index/reports версионируются отдельно. Валидное полностью наблюдённое пустое состояние отличается от неудачного/неполного сбора; ADR-003/U03 заменяет blanket empty rejection из legacy task T018 поддержкой явно подтверждённого пустого состояния.
 
-LLM port уже отделяет current person insight use case от concrete HTTP — [U05 report](U05_LLM_PROVIDER_REPORT.md). Будущая retrieval цепочка ещё отсутствует: runtime NO_RAG; Ollama NOT IMPLEMENTED. [U09](U09_LLM_RESILIENCE_REPORT.md) реализует generation retry/backoff/jitter и stateful breaker: 3 attempts, max sleep 1.5s, threshold 3 logical failures, recovery 30s и single probe. Это internal defaults, не измеренный SLO: total deadline НЕ enforced; U11 measurement/tuning остаётся целью. Models/health независимы от generation breaker. Hidden remote fallback отсутствует. Vector DB, dense/hybrid/RRF/reranker не выбраны; U08 начинает с измеримого retrieval baseline.
+LLM port уже отделяет current person insight use case от concrete HTTP — [U05 report](U05_LLM_PROVIDER_REPORT.md). U08 implements the relation-only internal STRUCTURED_RAG—LEXICAL chain. API/UI chat and automatic orchestration arrows remain target; Ollama NOT IMPLEMENTED. [U09](U09_LLM_RESILIENCE_REPORT.md) реализует generation retry/backoff/jitter и stateful breaker: 3 attempts, max sleep 1.5s, threshold 3 logical failures, recovery 30s и single probe. Это internal defaults, не измеренный SLO: total deadline НЕ enforced; U11 measurement/tuning остаётся целью. Models/health независимы от generation breaker. Hidden remote fallback отсутствует. Vector DB, dense/hybrid/RRF/reranker не выбраны; U08 supplies an evaluated lexical baseline, with no improvement over term-frequency measured on its small fixture.
 
-U06 now implements bounded controls across the diagram: loopback endpoint policy, Host/Origin, minimized diagnostics/retention and tracked disclosure guard; broader privacy assurance remains partial. U07 gates планируются; присутствующие tests не дают оснований объявлять CI реализованной. Graph/Export/Scheduler остаются P2 U14–U16 и не обязательны для этого ядра. [Evolution and acceptance](ARCHITECTURE_EVOLUTION.md), [CURRENT](C4_CURRENT.md).
+U06 now implements bounded controls across the diagram: loopback endpoint policy, Host/Origin, minimized diagnostics/retention and tracked disclosure guard; broader privacy assurance remains partial. U07 local gates are implemented and U08 adds six retrieval fitness checks. Graph/Export/Scheduler остаются P2 U14–U16 и не обязательны для этого ядра. [Evolution and acceptance](ARCHITECTURE_EVOLUTION.md), [CURRENT](C4_CURRENT.md).
 
 U03 implementation is narrower than the full target chain: relation imports can declare complete sets; the current DOM collector cannot prove completeness and produces INCOMPLETE observations. No automatic index/AI pipeline, retrieval, Graph or immutable messages were added. [U03 evidence](U03_IMMUTABLE_SNAPSHOT_REPORT.md).
 
@@ -53,4 +53,6 @@ U04 implemented current contract governance only: canonical `/api`, no fictitiou
 
 Local application authentication and encryption are not implemented by U06. Its tested local controls do not promote RAG, Graph, Export or multi-user capabilities. [Security status](SECURITY_PRIVACY_STATUS.md).
 
-U07 runner/architecture fitness are now IMPLEMENTED for current scope; [workflow](../../.github/workflows/quality-gates.yml) is CONFIGURED LOCALLY and remote execution NOT YET VERIFIED. Future retrieval evaluations and broader live/target behavior tests remain PLANNED. No remote PASS, branch protection or deployment claim is inferred from the diagram.
+**U08 current evidence:** STRUCTURED_RAG—LEXICAL, internal service only; 31 RAG tests, 222 total tests, seven gates and 18 fitness invariants PASS. [Report](U08_LOCAL_RAG_REPORT.md) · [Evaluation](RAG_EVALUATION.md). Prior U07 remote Actions success is owner-reported; this U08 revision is locally verified only and has not been pushed. Branch settings are unchanged.
+
+The implemented Index/Retrieval/Context boxes cover only the bounded internal U08 service. The broader source corpus and API/AI workflow are still target. [Current dependencies](C4_CURRENT.md).

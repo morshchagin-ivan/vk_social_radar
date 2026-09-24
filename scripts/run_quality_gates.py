@@ -81,6 +81,18 @@ FITNESS = {
     'FITNESS-UI-001': (
         'test_privacy.StoragePrivacyTests.test_sec_xss_001_actual_helpers_and_rendering_boundaries',
     ),
+    'FITNESS-RAG-001': ('test_rag.RAGTests.test_rag_service_depends_on_ports',),
+    'FITNESS-RAG-002': (
+        'test_rag.RAGTests.test_index_is_derived_rebuildable_and_conflicts_fail',
+        'test_rag.RAGTests.test_rebuild_removes_obsolete_derived_edges',
+    ),
+    'FITNESS-RAG-003': ('test_rag.RAGTests.test_no_evidence_bypasses_all_llm_calls',),
+    'FITNESS-RAG-004': (
+        'test_rag.RAGTests.test_citations_constrained_to_retrieved_context',
+        'test_rag.RAGTests.test_structured_output_validation',
+    ),
+    'FITNESS-RAG-005': ('test_rag.RAGTests.test_evaluation_thresholds_and_baseline',),
+    'FITNESS-RAG-006': ('test_rag.RAGTests.test_eval_fixture_synthetic_only',),
 }
 
 CATEGORIES = {
@@ -91,6 +103,7 @@ CATEGORIES = {
     'API contract/in-process integration (U04)': {'test_api_contract'},
     'Security/privacy (U06)': {'test_privacy'},
     'Quality governance (U07)': {'test_quality_gates'},
+    'Local RAG (U08)': {'test_rag'},
     'Unit/regression': {'test_services', 'test_v02', 'test_v03', 'test_v031',
                         'test_v04', 'test_v041', 'test_v042', 'test_v043_organization_source'},
 }
@@ -255,7 +268,8 @@ def syntax_import_gate():
                        'uvicorn.run', 'playwright.async_api._context_manager.PlaywrightContextManager.start'):
             guards.enter_context(patch(target, side_effect=AssertionError('Import side effect forbidden')))
         for module in ('app.main', 'app.collector', 'app.importers', 'app.snapshots',
-                       'app.ai.composition', 'app.ai.service', 'app.ai.resilience'):
+                       'app.ai.composition', 'app.ai.service', 'app.ai.resilience',
+                       'app.rag.corpus', 'app.rag.retrieval', 'app.rag.service'):
             importlib.import_module(module)
     if shutil.which('node') is None:
         raise GateFailure('Node.js is required for the existing U06 UI helper checks')

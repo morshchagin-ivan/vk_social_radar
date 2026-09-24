@@ -23,7 +23,7 @@ This repository contains a working MVP and a documented target architecture. Tar
 - Отдельный persistent Chromium profile и collection friends/followers/dialogs; public organization source API/jobs.
 - Preview перед явным save поддерживаемых friends/followers/dialog kinds. Organization preview пока сохраняется в RAM/JSON и не совместим с общим save-preview.
 - Импорты JSON/CSV/TSV/HTML/ZIP, relation history/diff-like processing, журнал изменений и message aggregates.
-- Person insight через LLMProvider → ResilientLLMProvider → LMStudioProvider, выбор model/temperature/endpoint; typed request/result/errors, validation до SQLite save. RAG отсутствует; Ollama adapter/fallback не реализованы.
+- Person insight через LLMProvider → ResilientLLMProvider → LMStudioProvider, выбор model/temperature/endpoint; typed request/result/errors, validation до SQLite save. Person Insight сохраняет fixed context; отдельный U08 RAG service реализован ниже. Ollama adapter/fallback не реализованы.
 
 Code/wiring подтверждены [аудитом](docs/certification/00_REPOSITORY_AS_IS.md) и U02/U03/U05/U09 tests; live VK/LLM не запускались. Dialog persistence после legacy migration подтверждена U02 на временных БД. Рабочая БД во время сборок не изменялась — [data status](docs/certification/DATA_MODEL_STATUS.md).
 
@@ -33,7 +33,7 @@ Code/wiring подтверждены [аудитом](docs/certification/00_REPO
 
 ## Target architecture
 
-[TARGET C4](docs/certification/C4_TARGET.md): immutable Snapshot, typed API, persistence ports, replaceable parsers и evaluated local retrieval. Migration, Provider и Retry/Exponential Backoff/Jitter/Circuit Breaker реализованы в U02/U05/U09. Immutable friend/follower Snapshot foundation — **IMPLEMENTED U03**; full message/dialog corpus and RAG — **PLANNED**, runtime RAG = **NO_RAG**. Global DIP остаётся PARTIAL. Social Graph/Scheduler/Export — roadmap, не current features.
+[TARGET C4](docs/certification/C4_TARGET.md): immutable Snapshot, typed API, persistence ports, replaceable parsers и evaluated local retrieval. Migration, Provider и Retry/Exponential Backoff/Jitter/Circuit Breaker реализованы в U02/U05/U09. Immutable friend/follower Snapshot foundation — **IMPLEMENTED U03**; full message/dialog corpus — **PLANNED**; U08 runtime RAG = **STRUCTURED_RAG—LEXICAL**, internal service only. Global DIP остаётся PARTIAL. Social Graph/Scheduler/Export — roadmap, не current features.
 
 ## Architecture decisions — ADR-001…006
 
@@ -51,7 +51,7 @@ U09 сохраняет HTTP timeouts 8/120s: retries не гарантируют
 
 ## Architecture evolution / backlog
 
-[Evolution stages](docs/certification/ARCHITECTURE_EVOLUTION.md) и [U01–U17 backlog](docs/certification/05_UPGRADE_BACKLOG.md). U02/U03/U04/U05/U09 завершены в заявленном scope; U07 unified runner/fitness IMPLEMENTED, workflow CONFIGURED LOCALLY; следующий рекомендуемый increment — U08, если RAG остаётся в scope. Вся Data Architecture не объявляется READY.
+[Evolution stages](docs/certification/ARCHITECTURE_EVOLUTION.md) и [U01–U17 backlog](docs/certification/05_UPGRADE_BACKLOG.md). U02/U03/U04/U05/U09 завершены в заявленном scope; U07 unified runner/fitness IMPLEMENTED, workflow CONFIGURED LOCALLY; U08 internal lexical retrieval IMPLEMENTED; следующий рекомендуемый increment — U10. Вся Data Architecture не объявляется READY.
 
 ## Running locally
 
@@ -77,7 +77,7 @@ U09 сохраняет HTTP timeouts 8/120s: retries не гарантируют
 
 Canonical command: **`python scripts/run_quality_gates.py`** (or `.venv\Scripts\python.exe scripts/run_quality_gates.py`). First install `requirements-dev.txt` in the test environment; Node.js 22.14.0 is required for the existing UI helper test. Validated Python: 3.13.2 on Windows. BAT delegates to the same runner and returns its exit code.
 
-U07 local gate: **191 automated tests PASS**, including all eight formerly separate functions and 12 new governance tests. Seven gates and twelve architecture fitness invariants pass; measured initial duration **8.565 seconds**, not an SLA. [Quality reference](docs/certification/QUALITY_GATE_REFERENCE.md) explains exact gates, categories and isolation. [Workflow](.github/workflows/quality-gates.yml) is **CONFIGURED LOCALLY**, remote GitHub Actions **NOT YET VERIFIED**; branch protection **NOT CONFIGURED**.
+Current U08 local gate: **222 automated tests PASS**, seven gates and **18 architecture fitness invariants PASS**, including 31 RAG tests and six RAG invariants. [Quality reference](docs/certification/QUALITY_GATE_REFERENCE.md). Prior U07 remote Actions success is owner-reported; this U08 revision is locally verified only and has not been pushed. Branch settings are unchanged.
 
 U02 изолирует DB/storage/backup paths новых и существующих DB tests; CSV test также подменяет импортированный `IMPORT_DIR`. Тесты используют temporary directories, не рабочие БД/imports/profile и не VK/LLM/network. Две прежние ResourceWarning в marker tests `test_v031.py` не являются failures и остаются вне U02. Команды и результаты — [U02 report](docs/certification/U02_SCHEMA_MIGRATION_REPORT.md); [historical coverage limits](docs/certification/03_SDD_CODE_GAP_ANALYSIS.md).
 
@@ -136,13 +136,13 @@ v0.4.1 по-прежнему видела только 15 диалогов, по
 
 Manual/CSV/JSON relation import is a declaration of a complete replacement set, including `people: []`. Missing people is rejected. Partial/unknown input cannot replace current truth. Current DOM collector and HTML anchor extraction cannot prove completeness: saves retain INCOMPLETE observations and the UI explains that current relations were not changed. Re-saving the same preview reuses its ID. Dialog saves remain independent.
 
-Legacy membership supplies current counts only until the first COMPLETE v2 snapshot for that relation stream; legacy events remain labelled `legacy_unknown`. New events render frozen historical names/URLs. The old same-day friend→follower inference is not emitted for new captures: friends/followers have independent evidence. Message analytics/AI are not snapshot-reproducible; RAG remains NO_RAG. No Event Sourcing or automatic AI pipeline was introduced.
+Legacy membership supplies current counts only until the first COMPLETE v2 snapshot for that relation stream; legacy events remain labelled `legacy_unknown`. New events render frozen historical names/URLs. The old same-day friend→follower inference is not emitted for new captures: friends/followers have independent evidence. Message analytics/AI are not snapshot-reproducible; RAG was NO_RAG at U03; U08 now adds a separate lexical service. No Event Sourcing or automatic AI pipeline was introduced.
 
 The startup migration supports v1→v2 and recognized v0→v2 with a pre-change SQLite backup. No migration was applied to the user database during this build. Empty v2 user history prevents automatic demo seeding; broader demo-mode work remains U13.
 
 ## U04 runtime API contract governance
 
-**IMPLEMENTED**: [canonical OpenAPI 3.1](11_OPENAPI.yaml) generated from FastAPI, [runtime guide](12_API_GUIDE.md), [inventory](docs/certification/U04_RUNTIME_API_INVENTORY.md), [report](docs/certification/U04_API_CONTRACT_REPORT.md). `/api` preserved; 29 public operations + HTML shell, 21 frontend call sites, explicit operationIds, typed responses and accurate errors. Auth is absent; RAG/Graph/Export remain planned.
+**IMPLEMENTED**: [canonical OpenAPI 3.1](11_OPENAPI.yaml) generated from FastAPI, [runtime guide](12_API_GUIDE.md), [inventory](docs/certification/U04_RUNTIME_API_INVENTORY.md), [report](docs/certification/U04_API_CONTRACT_REPORT.md). `/api` preserved; 29 public operations + HTML shell, 21 frontend call sites, explicit operationIds, typed responses and accurate errors. Auth is absent; Chat API/Graph/Export remain planned; U08 RAG is internal-only.
 
 Run `.venv\Scripts\python.exe -B scripts/export_openapi.py --check` for artifact drift and `.venv\Scripts\python.exe -B -m unittest discover -s tests -p test_api_contract.py -v` for semantic/UI/behavior coverage. Edit route metadata/models then regenerate with the same exporter without `--check`. JSON-form YAML 1.2 needs no new dependency. Formal OpenAPI validator/client generation was not available/run. No frontend changes.
 
@@ -160,3 +160,9 @@ Uploads use bounded reads, unique contained basenames and safe formats; ZIP expa
 ## U07 — Unified quality gates
 
 [Report](docs/certification/U07_QUALITY_GATES_CI_REPORT.md) · [Command/gate reference](docs/certification/QUALITY_GATE_REFERENCE.md). One runner checks tracked sensitive artifacts/secrets, syntax/imports, canonical OpenAPI, documentation, the full test suite and measured architecture fitness. Tests use temporary data and mocks; no live VK/LM Studio/Chromium or user database is required. Markdown scenarios remain DOCUMENTED_ONLY; live walkthroughs remain MANUAL and unperformed by this gate. Recommendation only: require PRs and the Quality Gates status for main after observing the first remote run; no repository settings were changed.
+
+## U08 — Evaluated local RAG
+
+**IMPLEMENTED — STRUCTURED_RAG—LEXICAL**: COMPLETE persisted relation snapshots/frozen people/timeline events → stable document IDs → derived RAM index → filtered BM25 → bounded context → LLMProvider → validated evidence citations. [Report](docs/certification/U08_LOCAL_RAG_REPORT.md) · [Evaluation](docs/certification/RAG_EVALUATION.md). Internal `app.ai.composition.get_rag_service()` preserves existing API/UI and Person Insight; no RAG endpoint. Empty evidence bypasses model discovery/generation.
+
+Synthetic evaluation: 18 cases, Recall@3/MRR/no-evidence accuracy all 1.0; term-frequency baseline ties BM25. No embeddings/hybrid/reranker, live-model quality claim or perfect prompt-injection protection. Names remain untrusted evidence. Corpus refresh requires a newly composed service; message history is excluded.

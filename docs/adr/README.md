@@ -9,7 +9,7 @@ Baseline 1.0 · 2026-09-23. Решения формализованы по по�
 | [003 Immutable Snapshot source of truth](ADR-003-immutable-snapshot-source-of-truth.md) | ACCEPTED | IMPLEMENTED relation foundation; messages excluded | U03 completed |
 | [004 Local LLM provider abstraction](ADR-004-local-llm-provider-abstraction.md) | ACCEPTED | IMPLEMENTED provider/AI DIP; U09 resilience implemented | U05/U09 completed |
 | [005 SQLite for MVP](ADR-005-sqlite-for-mvp.md) | ACCEPTED | IMPLEMENTED SQLite, U02 migration and U03 schema v2 | U02/U03 completed |
-| [006 RAG architecture](ADR-006-rag-architecture.md) | ACCEPTED / IMPLEMENTATION PLANNED | PLANNED; runtime NO_RAG | U08 |
+| [006 RAG architecture](ADR-006-rag-architecture.md) | ACCEPTED | IMPLEMENTED: STRUCTURED_RAG—LEXICAL, internal service | U08 completed / U17 evolution |
 
 Canonical numbering — этот register. AD-001…006 в legacy System Architecture обозначают другой набор принципов и не являются прежними версиями этих ADR. В случае расхождения new ADR определяет target baseline, [CURRENT C4](../certification/C4_CURRENT.md) и [audit](../certification/00_REPOSITORY_AS_IS.md) определяют AS-IS. Старые документы остаются историческим evolutionary design.
 

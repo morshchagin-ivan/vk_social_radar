@@ -23,6 +23,12 @@ flowchart LR
   API --> Composition["ai.composition - provider binding"]
   Composition -.-> AI
   Composition -.-> Resilience
+  Composition -.-> RAG["Internal RAGService - no API route"]
+  DB --> Corpus["COMPLETE corpus - readonly ingestion"]
+  Corpus --> Index["In-memory lexical index and Retriever port"]
+  Index --> Context["Bounded evidence context"]
+  Context --> RAG
+  RAG --> Port
   API --> Settings["ai.settings - existing three keys"]
   Settings --> DB
   AI --> DB
@@ -51,7 +57,7 @@ U05 реализует DIP только на AI/provider boundary; global DIP PA
 
 Composition хранит одну active endpoint binding на процесс: breaker живёт между API requests; смена endpoint заменяет binding, model/temperature её не сбрасывают. CLOSED: максимум 3 attempts, max retry sleep 1.5s; threshold 3 logical failures; recovery 30s, один HALF_OPEN attempt. Состояние защищено Lock, transport/sleep вне lock. 8/120s transport timeouts сохранены; total deadline НЕ enforced.
 
-Здесь нет React, Scheduler, RAG, AI Worker, Social Graph, Repository, Kafka или Redis. Non-AI analytics не читает VK напрямую, использует COMPLETE v2 snapshots для current relation counts; message analytics остаётся period-based и не snapshot-scoped. Код и wiring исследованы, live VK/LLM не запускались. [Target](C4_TARGET.md), [gaps](TECHNICAL_DEBT_REGISTER.md), [audit](00_REPOSITORY_AS_IS.md).
+Здесь нет React, Scheduler, AI Worker, Social Graph, Repository, Kafka или Redis. Non-AI analytics не читает VK напрямую, использует COMPLETE v2 snapshots для current relation counts; message analytics остаётся period-based и не snapshot-scoped. Код и wiring исследованы, live VK/LLM не запускались. [Target](C4_TARGET.md), [gaps](TECHNICAL_DEBT_REGISTER.md), [audit](00_REPOSITORY_AS_IS.md).
 
 U03 adds snapshots/snapshot_people/snapshot_events and a nullable namespaced people.snapshot_key. Complete source rows are immutable; events are derived and can be repaired after backdated insertion. Order: captured_at then insertion sequence, date-only input retained with date precision. Per-stream legacy fallback stops at the first COMPLETE v2 capture. New event names/URLs come from frozen membership, legacy events remain labelled legacy_unknown. [U03 evidence](U03_IMMUTABLE_SNAPSHOT_REPORT.md).
 
@@ -61,4 +67,6 @@ U06 boundary: launcher 127.0.0.1 → Host/same-origin middleware → existing AP
 
 ## Development verification boundary — U07
 
-Local Python and the thin BAT wrapper invoke [one runner](../../scripts/run_quality_gates.py). The [GitHub Actions workflow](../../.github/workflows/quality-gates.yml) is configured to invoke the same runner on a Windows worker. These are development checks, not application runtime services. Runner → tracked privacy/syntax/OpenAPI/docs gates → one isolated 191-test suite → measured fitness verdicts. It does not connect to the diagram's user SQLite, VK, browser session or local inference service. Local PASS is verified; remote Actions execution is NOT YET VERIFIED.
+Local Python and the thin BAT wrapper invoke [one runner](../../scripts/run_quality_gates.py). The [GitHub Actions workflow](../../.github/workflows/quality-gates.yml) is configured to invoke the same runner on a Windows worker. These are development checks, not application runtime services. Runner → tracked privacy/syntax/OpenAPI/docs gates → one isolated 222-test suite with 18 fitness invariants → measured fitness verdicts. It does not connect to the diagram's user SQLite, VK, browser session or local inference service. Prior U07 remote Actions success is owner-reported; this U08 revision is locally verified only and has not been pushed. Branch settings are unchanged.
+
+U08 RAG is an internal, explicitly composed service; the diagram does not imply an API/UI path. Its corpus is read at construction, and callers rebuild after source changes. Person Insight retains fixed context. No messages/ai_insights/browser data enter retrieval. [Report](U08_LOCAL_RAG_REPORT.md).

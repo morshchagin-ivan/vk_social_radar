@@ -1,6 +1,6 @@
-> **Current U07 automated evidence:** 191 discoverable tests PASS via `python scripts/run_quality_gates.py`; seven mandatory gates and twelve architecture fitness invariants PASS. [Quality reference](../docs/certification/QUALITY_GATE_REFERENCE.md), [U07 report](../docs/certification/U07_QUALITY_GATES_CI_REPORT.md).
+> **Current U08 automated evidence:** 222 discoverable tests PASS via `python scripts/run_quality_gates.py`; seven mandatory gates and 18 architecture fitness invariants PASS. [Quality reference](../docs/certification/QUALITY_GATE_REFERENCE.md), [U08 report](../docs/certification/U08_LOCAL_RAG_REPORT.md). The 31 RAG tests include 18 synthetic evaluation cases; cases and derived fitness verdicts are not added to the test count.
 > **AUTOMATED:** temporary SQLite/migration/snapshot, fake AI/resilience, in-process API/smoke, privacy/UI helpers, architecture and governance checks.
-> **MANUAL / NOT RUN:** live VK login/Chromium/LM Studio and visual UI walkthroughs. **DOCUMENTED_ONLY:** target RAG/Graph/Export/Scheduler and remaining Markdown scenarios below.
+> **MANUAL / NOT RUN:** live VK login/Chromium/LM Studio and visual UI walkthroughs. **DOCUMENTED_ONLY:** broader Chat/Graph/Export/Scheduler and unmapped Markdown scenarios below. Internal lexical RAG mechanics are AUTOMATED in test_rag.py; this does not certify the broader target scenarios.
 > CI workflow is CONFIGURED LOCALLY; remote Actions NOT YET VERIFIED. Branch protection NOT CONFIGURED. The historical specification below is not a claim that every target acceptance box has been implemented.
 
 > **Verification status: TARGET TEST SPECIFICATION / PLANNED CHECKS.**

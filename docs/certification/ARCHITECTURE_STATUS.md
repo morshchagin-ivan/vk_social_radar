@@ -22,18 +22,18 @@ Baseline 1.0 · 2026-09-23. Статусы capability: **IMPLEMENTED** — ко�
 | Circuit Breaker | IMPLEMENTED | shared per-process generation gate: CLOSED/OPEN/HALF_OPEN, 3 logical failures, 30s recovery, one probe, Lock; CB-001…010 PASS | no distributed state; discovery independent | [U09](05_UPGRADE_BACKLOG.md) completed |
 | Immutable Snapshot aggregate | IMPLEMENTED for friend/follower foundation | [snapshots](../../app/snapshots.py), [DDL/triggers](../../app/snapshot_schema.py): UUID, capture/precision, lifecycle/completeness, immutable projection, explicit empty; [U03 evidence](U03_IMMUTABLE_SNAPSHOT_REPORT.md) | full corpus/Run aggregate not implemented | U03 completed |
 | Repository | PLANNED | direct SQL in services | узкие persistence contracts | [U12](05_UPGRADE_BACKLOG.md) |
-| DIP | IMPLEMENTED at AI provider boundary only | [AIInsightService](../../app/ai/service.py) depends on LLMProvider; no httpx/concrete adapter imports; SQL remains direct | persistence DIP still PLANNED | [U05](05_UPGRADE_BACKLOG.md) completed / U12 planned |
+| DIP | IMPLEMENTED at AI/RAG port boundaries | AIInsightService uses LLMProvider; RAGService uses Retriever/LLMProvider | persistence DIP remains PLANNED | U05/U08 complete / U12 planned |
 | Collector Strategy | PLANNED | if/elif + methods, no substitution seam | parser contract and replaceable strategies | [U10](05_UPGRADE_BACKLOG.md) |
 | ACL/normalization | PARTIAL | importers._normalize_person, DOM cleaners/org mapper | typed boundary/identity validation | [U10/U13](05_UPGRADE_BACKLOG.md) |
-| RAG | PLANNED | runtime NO_RAG; fixed person context | evaluated local query retrieval | [U08](05_UPGRADE_BACKLOG.md) |
-| AI Chat | PLANNED | no route/session/retriever | narrow local grounded Q&A | [U08/U04](05_UPGRADE_BACKLOG.md) |
+| RAG | IMPLEMENTED — STRUCTURED_RAG—LEXICAL | persisted COMPLETE facts → BM25 → bounded context → provider → validated citations; [31 tests/eval](U08_LOCAL_RAG_REPORT.md) | semantic/hybrid retrieval and chat product remain planned | U08 completed / U17 |
+| AI Chat | PLANNED | no route/session/UI; internal RAG service exists | product contract and broader evaluation | U17 / future API scope |
 | AI Report | PARTIAL | ai_insights per person, not snapshot reports | source-bound report with citations | [U03/U05/U08](05_UPGRADE_BACKLOG.md) |
 | Social Graph | PLANNED | docs only | defined edge semantics and provenance | [U16](05_UPGRADE_BACKLOG.md), P2 |
 | Search | PARTIAL | [app.js](../../static/app.js) people/dialog client filters | scoped local search; evaluate ranking | [U17](05_UPGRADE_BACKLOG.md), P2 |
 | Export | PLANNED | no export route; preview JSON not export product | local versioned round-trip | [U15](05_UPGRADE_BACKLOG.md), P2 |
 | Scheduler | PLANNED | volatile asyncio jobs not scheduler | only with unattended collection requirement | [U14](05_UPGRADE_BACKLOG.md), P2 |
 | Observability | PARTIAL | diagnostics/status/traces; raw data risk | safe correlated events and metrics | [U06/U11](05_UPGRADE_BACKLOG.md) |
-| CI / quality governance | IMPLEMENTED runner/fitness; workflow CONFIGURED LOCALLY | [191 tests, 7 gates, 12 fitness invariants](U07_QUALITY_GATES_CI_REPORT.md), one local/Actions command | remote run NOT YET VERIFIED; branch protection NOT CONFIGURED; no deployment pipeline | U07 locally complete |
+| CI / quality governance | IMPLEMENTED runner/fitness | [222 tests, 7 gates, 18 invariants](U08_LOCAL_RAG_REPORT.md) | Prior U07 remote Actions success is owner-reported; this U08 revision is locally verified only and has not been pushed. Branch settings are unchanged. | U07/U08 local complete |
 | Privacy hardening | IMPLEMENTED bounded U06 / PARTIAL overall assurance | 31 security tests, tracked guard; no real data touched | operator/debug/history/full-erasure limitations remain; auth/encryption absent | U06 complete; U07/U11/U13 separate |
 | Distributed infrastructure / tenancy / federated training | NOT_PLANNED | no current requirement/load evidence | reconsider only on changed requirements | none; [rationale](ARCHITECTURAL_PATTERNS.md) |
 
@@ -47,4 +47,6 @@ U04: **Contract Governance IMPLEMENTED; current API drift RESOLVED**. [Canonical
 
 U06 adds explicit local privacy/access controls, not application login or encrypted storage. Historical U06 gate: **171 unittest + 8 additional PASS**. [Threat model](THREAT_MODEL.md), [classification](DATA_CLASSIFICATION.md), [report](U06_PRIVACY_ACCESS_HARDENING_REPORT.md).
 
-U07 authoritative evidence: **191 standard-discoverable tests PASS**; no separate plain functions remain. [Quality reference](QUALITY_GATE_REFERENCE.md) distinguishes AUTOMATED, MANUAL and DOCUMENTED_ONLY checks. Remote CI and branch protection are not claimed complete.
+Historical U07 evidence: 191 tests PASS; current U08 evidence is below. Earlier U03/U04/U09 NO_RAG statements describe those milestones, not the current service.
+
+**U08 current evidence:** STRUCTURED_RAG—LEXICAL, internal service only; 31 RAG tests, 222 total tests, seven gates and 18 fitness invariants PASS. [Report](U08_LOCAL_RAG_REPORT.md) · [Evaluation](RAG_EVALUATION.md). Prior U07 remote Actions success is owner-reported; this U08 revision is locally verified only and has not been pushed. Branch settings are unchanged.

@@ -14,7 +14,7 @@
 | relation_events | preserved legacy journal | labelled legacy_unknown; original historical name/completeness cannot be reconstructed |
 | message_stats | mutable per-person period aggregates | no snapshot scope |
 | app_settings | existing key/value LM configuration | unchanged |
-| ai_insights | existing per-person output | no snapshot/prompt provenance or retrieval citations; RAG NO_RAG |
+| ai_insights | existing per-person output | existing fixed-context insights lack snapshot/prompt provenance; U08 returns separate cited results without persistence |
 | collector_dialogs | existing 13-field dialog summaries | U02 compatibility preserved; outside immutable relation aggregate |
 | import_jobs | existing import status/files/count | real job/file reference may be recorded; not a fabricated CollectorRun |
 
@@ -34,8 +34,10 @@ Legacy tables remain compatibility history and are never declared COMPLETE v2. T
 
 Order: (captured_at, sequence) within friend/follower, excluding non-COMPLETE. A backdated B between A/C atomically derives A→B and replaces obsolete A→C with B→C. Source membership/projection never changes. Pair replay uses DB uniqueness and retains unchanged event IDs. Explicit pair diff reads only those two immutable sets.
 
-Dashboard relation counts, list_people flags and new timeline/person-detail events use v2 truth. People remain mutable convenience records; messages and AI retain existing period/current semantics. Full FR-2 corpus/lifecycle, attribute/activity diff, snapshot browser/export/retention and source-linked AI/RAG remain target. [Logical target](../../10_DATA_MODEL.md) is not current SQLite DDL.
+Dashboard relation counts, list_people flags and new timeline/person-detail events use v2 truth. People remain mutable convenience records; messages and AI retain existing period/current semantics. Full FR-2 corpus/lifecycle, attribute/activity diff, snapshot browser/export/retention and durable source-linked AI reports remain target. [Logical target](../../10_DATA_MODEL.md) is not current SQLite DDL.
 
 ## Evidence
 
 34 new U03 + 14 U02 + 26 U05 + 25 U09 + 18 existing = **117 unittest PASS**; 8 additional functions PASS. Fresh/migrated FK checks, preservation/backup/refusal/rollback, drift rejection, immutability, replay/concurrency, same-day/empty/backdated cases and incomplete exclusion use synthetic data. No network or user database writes. [Report](U03_IMMUTABLE_SNAPSHOT_REPORT.md).
+
+U08 reads COMPLETE snapshot headers, frozen memberships and derived compatible events through a readonly corpus builder. No table/migration is added. Event document IDs use stable pair/type/person identity, not the rebuildable autoincrement row ID. The index lives only in memory and is rebuilt after source changes. Message_stats, ai_insights and mutable people are excluded. [U08 evidence](U08_LOCAL_RAG_REPORT.md).

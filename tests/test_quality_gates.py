@@ -76,6 +76,8 @@ class QualityGateTests(unittest.TestCase):
             'FITNESS-DB-001', 'FITNESS-SNAPSHOT-001', 'FITNESS-SNAPSHOT-002',
             'FITNESS-AI-001', 'FITNESS-AI-002', 'FITNESS-RES-001', 'FITNESS-RES-002',
             'FITNESS-API-001', 'FITNESS-SEC-001', 'FITNESS-SEC-002', 'FITNESS-SEC-003', 'FITNESS-UI-001',
+            'FITNESS-RAG-001', 'FITNESS-RAG-002', 'FITNESS-RAG-003',
+            'FITNESS-RAG-004', 'FITNESS-RAG-005', 'FITNESS-RAG-006',
         })
         outcomes = {identifier: 'PASS' for evidence in quality.FITNESS.values() for identifier in evidence}
         self.assertTrue(all(quality.fitness_results(outcomes).values()))

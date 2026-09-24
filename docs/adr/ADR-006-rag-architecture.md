@@ -1,41 +1,35 @@
 # ADR-006 — Local RAG Architecture
 
-**Status:** ACCEPTED / IMPLEMENTATION PLANNED. **Implementation:** PLANNED; runtime **NO_RAG**. **Date:** 2026-09-23.
-**Decision owners:** владелец VK Social Radar и architecture maintainer (роли).
-**Related backlog:** [U08 RAG; prerequisites U03/U05/U07; evolution U17](../certification/05_UPGRADE_BACKLOG.md).
+**Status:** ACCEPTED. **Implementation:** IMPLEMENTED — **STRUCTURED_RAG—LEXICAL**, internal service only. **Updated:** 2026-09-24 (U08).
+**Decision owners:** VK Social Radar owner and architecture maintainer (roles).
+**Related backlog:** [U08 completed; U17 retrieval evolution](../certification/05_UPGRADE_BACKLOG.md).
 
 ## Context
 
-[FR-8/FR-9](../../spec.md) описывают локальный AI Pipeline/Chat по сохранённой истории. Сейчас [generate_person_insight](../../app/lmstudio.py) передаёт fixed context последнего периода и до 10 событий. Нет indexing/query retrieval/chunks/citations; strings в evidence не являются проверяемыми source citations.
+FR-8/FR-9 describe local AI over stored history. Before U08, Person Insight used fixed context and runtime was NO_RAG. U03 supplies immutable COMPLETE friend/follower snapshots, frozen person projections and derived pair events. Message aggregates are mutable and not snapshot-scoped; actual message text is unavailable. Current dependencies/repository assets contain no ready local embedding runtime/model suitable for offline CI.
 
 ## Decision
 
-Создать минимальный локальный retrieval pipeline для выбранного report/Q&A scenario: versioned source ingestion, stable chunk/source IDs, index, query-dependent retrieval с scope filtering, context budget, prompt + provider call, проверяемые citations и no-evidence response. Сначала synthetic labelled corpus и evaluation baseline.
+Implement a separate [RAGService](../../app/rag/service.py) over Retriever and LLMProvider ports, composed in [get_rag_service](../../app/ai/composition.py). Preserve Person Insight and existing API/UI. Service-only delivery avoids introducing chat sessions or an unevaluated product surface; no RAG endpoint is added.
 
-Vector DB, dense embeddings, hybrid, RRF и reranker **не обещаются**. Выбор lexical/structured/dense подхода и storage делается по corpus/query evaluation в U08. Уровень RAG классифицируется по реализованному механизму, не по наличию prompt с данными.
+[CorpusBuilder](../../app/rag/corpus.py) reads existing v2 COMPLETE headers, immutable memberships and compatible persisted timeline edges. Each short structured fact is one document/chunk. SHA-256 IDs derive from stable source keys, not position or mutable event row IDs. Provenance includes table and source identities; names remain untrusted evidence. No mutable profiles, legacy unknown events, messages, ai_insights, browser/session data or raw source references enter the corpus.
 
-## Current implementation status
+[LexicalIndex](../../app/rag/retrieval.py) is a rebuildable in-memory inverted index, versioned by a content/metadata fingerprint. Rebuild replaces all derived state, including obsolete edges after backdated insertion. No schema migration, persistent index or model download. Deterministic Unicode tokenization, small explicit English/Russian aliases and conjunctive eligibility precede BM25 ranking. Metadata filters apply before top-k; equal scores sort by document ID. This conservative baseline can miss paraphrases and multi-fact questions.
 
-PLANNED / NO_RAG. Concrete LM Studio call существует; AI Chat отсутствует; ai_insights не equivalent snapshot AIReport. [Pattern audit](../certification/02_PATTERN_INVENTORY.md) фиксирует отсутствие ingestion/index/retrieval/evaluation.
+Context assembly deduplicates source identity and bounds whole serialized facts by count/characters. Empty acceptable context returns INSUFFICIENT_EVIDENCE before any model discovery/generation. Prompts delimit untrusted data, request evidence citations and separate inferences. Local structured validation rejects citations outside supplied context. The existing local-only provider and shared resilience binding remain authoritative.
 
 ## Alternatives considered
 
-Fixed SQL context (текущий MVP); отправка всей истории в prompt; local lexical/structured retrieval; dense/hybrid stack. Fixed context недостаточен для query relevance; whole-history prompt не даёт управляемого scope/budget. Более сложный retrieval выбирается только после measurable improvement.
+Fixed context lacks query retrieval. Whole-history prompting lacks a useful budget. Raw term-frequency ranking is an implemented comparison baseline. BM25 scores account for term rarity and document length, but the small synthetic evaluation shows **no improvement over term frequency**. Embeddings, vector storage, hybrid fusion and reranking remain unimplemented until available offline assets and measured benefit justify them. No Advanced RAG claim.
 
-## Consequences
+## Consequences and privacy
 
-- Positive: scoped source evidence, grounded ответы, проверяемая freshness/relevance.
-- Negative: index lifecycle, source/citation integrity и evaluation assets нужно поддерживать.
-- Risks: stale index, нерелевантный контекст, hallucinated citations, prompt injection через source text; retrieval не гарантирует factuality автоматически.
+Stable citations and deterministic evaluation make the bounded source-to-answer mechanics testable. The index is local derived state and a service instance represents its construction-time corpus; callers create a new service after source changes. It is not automatically refreshed or a source of truth. No queries, evidence or answers are logged/persisted by the RAG modules. Safe provenance omits profile URLs and file references, but names and person keys remain personal data in real operation.
 
-## Security/Privacy impact
+Prompt delimiters are guidance, not a security sandbox. Corpus text may influence generated prose. Citation membership validation proves source identity, not entailment, truth or causality; natural-language inline references are not independently verified. FakeLLM tests certify mechanics only. No code/link execution or remote fallback is introduced.
 
-Corpus и inference остаются локальными по ADR-001; user/VK text трактуется как данные, не инструкции. Context minimization, source scope/deletion propagation и safe logging обязательны в target. Не использовать реальные private messages в CI/eval.
+## Validation and evolution
 
-## Validation/Evidence
+[U08 report](../certification/U08_LOCAL_RAG_REPORT.md), [evaluation](../certification/RAG_EVALUATION.md), [31 tests](../../tests/test_rag.py), [18-case synthetic fixture](../../tests/fixtures/rag_eval.jsonl). Recall@3 and MRR each 1.0 on 13 answerable cases; no-evidence accuracy 1.0 on five unanswerable cases. Thresholds 0.90/0.90/1.0 are enforced by FITNESS-RAG-005. Six RAG fitness invariants join the existing U07 runner.
 
-AS-IS: [lmstudio.py](../../app/lmstudio.py), [db.py](../../app/db.py), [audit NO_RAG](../certification/02_PATTERN_INVENTORY.md). Target U08 evidence: labelled relevance queries, source citation validation, insufficient-evidence case, freshness/metadata filter tests, mocked provider. Численные quality targets — [NFR baseline](../certification/NFR_BASELINE.md), TBD during U11/eval design.
-
-## Evolution path
-
-U03 стабильный source → U05 provider → U07 test gate → U08 minimal evaluated retrieval. U17 advanced search/reranking возможен позднее при подтверждённой пользе. Baseline заканчивается документацией и не начинает эту реализацию.
+U17 may expand the held-out corpus/query workload and compare semantic/hybrid retrieval. AI Chat UI/API, durable reports, full message source reproduction and automatic AI pipelines remain planned; U08 does not complete all FR-8/FR-9.
