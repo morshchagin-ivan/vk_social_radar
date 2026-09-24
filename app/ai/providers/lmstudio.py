@@ -4,6 +4,7 @@ from dataclasses import asdict
 from typing import Any
 
 import httpx
+from ...privacy import local_llm_url
 
 from ..contracts import (
     GenerationRequest, GenerationResult, ModelInfo, ProviderProtocolError,
@@ -13,13 +14,14 @@ from ..contracts import (
 
 class LMStudioProvider:
     def __init__(self, base_url: str, *, transport: httpx.BaseTransport | None = None):
-        self.base_url = base_url.rstrip("/")
+        self.base_url = local_llm_url(base_url)
         self.transport = transport
 
     def _request(self, method: str, path: str, timeout: float, **kwargs: Any) -> dict[str, Any]:
+        endpoint = local_llm_url(self.base_url)
         try:
-            with httpx.Client(timeout=timeout, transport=self.transport) as client:
-                response = client.request(method, f"{self.base_url}{path}", **kwargs)
+            with httpx.Client(timeout=timeout, transport=self.transport, trust_env=False, follow_redirects=False) as client:
+                response = client.request(method, f"{endpoint}{path}", **kwargs)
                 response.raise_for_status()
                 payload = response.json()
         except httpx.TimeoutException:

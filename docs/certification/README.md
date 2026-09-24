@@ -1,6 +1,6 @@
 # VK Social Radar — Certification Architecture Baseline
 
-**Baseline:** 1.0 · **Updated:** 2026-09-24 · **Repository:** `C:\Developments\Javascript\VK` · **Runtime version:** 0.4.2. U04 build uses `certification/architecture-upgrade` on U03; exact revisions/tags in the [U04 report](U04_API_CONTRACT_REPORT.md).
+**Baseline:** 1.0 · **Updated:** 2026-09-24 · **Repository:** `C:\Developments\Javascript\VK` · **Runtime version:** 0.4.2. U06 build uses `certification/architecture-upgrade` on U04; exact revisions/tags in the [U06 report](U06_PRIVACY_ACCESS_HARDENING_REPORT.md).
 
 This repository contains a working MVP and a documented target architecture. Target components are never presented as implemented unless confirmed by code and tests.
 
@@ -22,7 +22,7 @@ Graph, Scheduler, Export — более поздний roadmap U14–U16; vector
 
 ## Known gaps
 
-[Technical Debt Register](TECHNICAL_DEBT_REGISTER.md) разделяет дефекты и roadmap. U02/U03 resolve schema upgrade and new relation same-day/empty/replay/backdated defects in code. User DB remains unmigrated; legacy history cannot be reconstructed. U04 resolves current API/OpenAPI drift; privacy hardening, collector completeness and broader message/AI scope remain open.
+[Technical Debt Register](TECHNICAL_DEBT_REGISTER.md) разделяет дефекты и roadmap. U02/U03 resolve schema upgrade and new relation same-day/empty/replay/backdated defects in code. User DB remains unmigrated; legacy history cannot be reconstructed. U04 resolves current API/OpenAPI drift; U06 implements bounded privacy controls. Full erasure, encryption, exhaustive log review, collector completeness and broader message/AI scope remain open.
 
 - [API status](API_STATUS.md): canonical current `/api`, archived `/api/v1` proposal, U04 implemented.
 - [Data model status](DATA_MODEL_STATUS.md): eleven tables, schema v2, immutable relation foundation and preserved legacy history.
@@ -50,4 +50,6 @@ Audit от 2026-09-23: **18 unittest passed + 8 existing plain functions passed 
 
 Working MVP → Architecture Audit → Known Gaps → ADR → Target Architecture → Prioritized Upgrade Backlog → Controlled Evolution.
 
-[Evolution](ARCHITECTURE_EVOLUTION.md) связывает U01–U13 с acceptance evidence. Latest U04 gate: **140 unittest + 8 additional functions PASS**, no network/user DB writes; [report](U04_API_CONTRACT_REPORT.md). Next recommendation only: **U06 privacy/access hardening**. For operation use [root README](../../README.md); the [Defense Guide](DEFENSE_GUIDE.md) retains baseline-era context.
+[Evolution](ARCHITECTURE_EVOLUTION.md) связывает U01–U13 с acceptance evidence. Latest U06 gate: **171 unittest + 8 additional functions PASS**, no network/user DB writes; [report](U06_PRIVACY_ACCESS_HARDENING_REPORT.md). Next recommendation only: **U07 unified runner/CI**. For operation use [root README](../../README.md); the [Defense Guide](DEFENSE_GUIDE.md) retains baseline-era context.
+
+U06 now supplies bounded privacy/access controls: [security status](SECURITY_PRIVACY_STATUS.md), [threat model](THREAT_MODEL.md), [classification](DATA_CLASSIFICATION.md), [report](U06_PRIVACY_ACCESS_HARDENING_REPORT.md). Latest gate: **171 unittest + 8 additional PASS**; no network/real DB/profile modification.

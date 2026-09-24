@@ -182,8 +182,8 @@ class CollectorStatus(Response):
     status: str
     authenticated: bool
     current_url: str
-    last_error: str
-    last_action: str
+    last_error: str | None
+    last_action: str | None
     has_preview: bool
     blocked_hosts: list[str]
     profile_dir: str

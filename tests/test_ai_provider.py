@@ -98,7 +98,7 @@ class LMStudioContractTests(ProviderContract, NetworkBlockedTests):
             if request.method == "GET":
                 return httpx.Response(200, json={"data": [MODEL]})
             return httpx.Response(200, json={"choices": [{"message": {"content": json.dumps(VALID)}}]})
-        return LMStudioProvider("http://provider.invalid/v1", transport=httpx.MockTransport(handler))
+        return LMStudioProvider("http://127.0.0.1:1234/v1", transport=httpx.MockTransport(handler))
 
 
 class AdapterTests(NetworkBlockedTests):
@@ -110,11 +110,11 @@ class AdapterTests(NetworkBlockedTests):
         schema = {"type": "object", "properties": {}}
         request = GenerationRequest("chosen", (Message("system", "Rule"), Message("user", "Input")),
                                     0.4, StructuredOutput("synthetic_schema", schema))
-        provider = LMStudioProvider("http://provider.invalid/v1/", transport=httpx.MockTransport(handler))
+        provider = LMStudioProvider("http://127.0.0.1:1234/v1/", transport=httpx.MockTransport(handler))
         result = provider.generate(request)
         self.assertEqual(result, GenerationResult("{}", "resolved-model", "lmstudio"))
         self.assertEqual(len(calls), 1)
-        self.assertEqual(str(calls[0].url), "http://provider.invalid/v1/chat/completions")
+        self.assertEqual(str(calls[0].url), "http://127.0.0.1:1234/v1/chat/completions")
         self.assertEqual(calls[0].method, "POST")
         self.assertEqual(json.loads(calls[0].content), {
             "model": "chosen", "temperature": 0.4, "stream": False,
@@ -129,11 +129,11 @@ class AdapterTests(NetworkBlockedTests):
         def handler(request):
             calls.append(request)
             return httpx.Response(200, json={"data": [MODEL], "object": "list"})
-        models = LMStudioProvider("http://provider.invalid/v1", transport=httpx.MockTransport(handler)).list_models()
+        models = LMStudioProvider("http://127.0.0.1:1234/v1", transport=httpx.MockTransport(handler)).list_models()
         self.assertEqual(models[0].id, "model-a")
         self.assertEqual(models[0].as_dict(), MODEL)
         self.assertEqual(calls[0].method, "GET")
-        self.assertEqual(str(calls[0].url), "http://provider.invalid/v1/models")
+        self.assertEqual(str(calls[0].url), "http://127.0.0.1:1234/v1/models")
         self.assertEqual(set(calls[0].extensions["timeout"].values()), {8.0})
 
     def assert_transport_failure(self, error_class, expected):
@@ -142,7 +142,7 @@ class AdapterTests(NetworkBlockedTests):
             def handler(request):
                 calls.append(request)
                 raise error_class("PRIVATE transport diagnostic", request=request)
-            provider = LMStudioProvider("http://provider.invalid/v1", transport=httpx.MockTransport(handler))
+            provider = LMStudioProvider("http://127.0.0.1:1234/v1", transport=httpx.MockTransport(handler))
             with self.assertRaises(expected) as caught:
                 operation(provider)
             self.assertEqual(len(calls), 1)  # No retry for either operation.
@@ -165,7 +165,7 @@ class AdapterTests(NetworkBlockedTests):
                     def handler(request):
                         calls.append(request)
                         return httpx.Response(status, text="PRIVATE provider response")
-                    provider = LMStudioProvider("http://provider.invalid/v1", transport=httpx.MockTransport(handler))
+                    provider = LMStudioProvider("http://127.0.0.1:1234/v1", transport=httpx.MockTransport(handler))
                     with self.assertRaises(expected) as caught:
                         operation(provider)
                     self.assertEqual(len(calls), 1)
@@ -178,19 +178,19 @@ class AdapterTests(NetworkBlockedTests):
                  {"model": 123, "choices": [{"message": {"content": "{}"}}]}]
         for payload in cases:
             with self.subTest(payload=payload):
-                provider = LMStudioProvider("http://provider.invalid/v1", transport=httpx.MockTransport(
+                provider = LMStudioProvider("http://127.0.0.1:1234/v1", transport=httpx.MockTransport(
                     lambda request: httpx.Response(200, json=payload)))
                 with self.assertRaises(ProviderResponseError):
                     provider.generate(REQUEST)
         for payload in ({}, {"data": None}, {"data": {}}, {"data": [None]},
                         {"data": [{}]}, {"data": [{"id": 3}]}, {"data": [{"id": " "}]}):
             with self.subTest(payload=payload):
-                provider = LMStudioProvider("http://provider.invalid/v1", transport=httpx.MockTransport(
+                provider = LMStudioProvider("http://127.0.0.1:1234/v1", transport=httpx.MockTransport(
                     lambda request: httpx.Response(200, json=payload)))
                 with self.assertRaises(ProviderResponseError):
                     provider.list_models()
         for operation in (lambda p: p.list_models(), lambda p: p.generate(REQUEST)):
-            provider = LMStudioProvider("http://provider.invalid/v1", transport=httpx.MockTransport(
+            provider = LMStudioProvider("http://127.0.0.1:1234/v1", transport=httpx.MockTransport(
                 lambda request: httpx.Response(200, content=b"not JSON")))
             with self.assertRaises(ProviderResponseError):
                 operation(provider)
@@ -300,11 +300,11 @@ class InsightTests(InsightFixture):
         self.assertEqual(self.count(), 0)
 
     def test_composition_uses_existing_settings(self):
-        save_settings({"lmstudio_base_url": "http://provider.invalid/v1/", "lmstudio_model": "chosen", "lmstudio_temperature": "0.6"})
+        save_settings({"lmstudio_base_url": "http://127.0.0.1:1234/v1/", "lmstudio_model": "chosen", "lmstudio_temperature": "0.6"})
         provider = composition.get_provider()
         self.assertIsInstance(provider, ResilientLLMProvider)
         self.assertIsInstance(provider.provider, LMStudioProvider)
-        self.assertEqual(provider.provider.base_url, "http://provider.invalid/v1")
+        self.assertEqual(provider.provider.base_url, "http://127.0.0.1:1234/v1")
         with patch.object(composition, "get_provider", return_value=self.fake):
             composition.get_insight_service().create(self.person_id, self.data)
         self.assertEqual(self.fake.requests[0].model, "chosen")
@@ -315,7 +315,7 @@ class APITests(InsightFixture):
     def setUp(self):
         super().setUp()
         # No TestClient context manager: do not run production startup/seed.
-        self.client = TestClient(main.app)
+        self.client = TestClient(main.app, base_url="http://127.0.0.1")
         self.addCleanup(self.client.close)
 
     def test_llm_port_011_models_api_through_composition(self):

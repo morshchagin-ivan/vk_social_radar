@@ -33,3 +33,8 @@ U03 completeness is evidence-based: declared full-set imports may become COMPLET
 | Capability | Requirement | Current component | API | Decision | Test evidence | Status | Backlog |
 |---|---|---|---|---|---|---|---|
 | Runtime API contract governance | U04 build invariant; no new FR invented | [main/models](../../app/main.py), [export](../../scripts/export_openapi.py) | 29 public `/api` + HTML shell; [canonical](../../11_OPENAPI.yaml) | compatibility decision in [U04 report](U04_API_CONTRACT_REPORT.md) | API-CONTRACT-001…012 + mutation/export/behavior tests: 23 PASS; full 140 + 8 PASS | IMPLEMENTED, current API drift RESOLVED | U04 completed; U06/U07 separate |
+
+
+| Capability | Requirement / decision | Current implementation | Evidence | Status / scope |
+|---|---|---|---|---|
+| Local privacy/access | Privacy/local single-user principles; ADR-001; U06 | local Host/Origin; loopback-only LLM; safe errors/diagnostics/imports/UI; tracked guard | [31 SEC tests](../../tests/test_privacy.py), [report](U06_PRIVACY_ACCESS_HARDENING_REPORT.md); U04 contract still PASS | IMPLEMENTED bounded controls; no auth/encryption/zero-trust claim |

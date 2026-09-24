@@ -4,7 +4,11 @@ from pathlib import Path
 from typing import Annotated, Any
 
 from fastapi import Body, FastAPI, File, Form, HTTPException, Query, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.exceptions import RequestValidationError
+
+from .access import LocalAccessMiddleware
+from .privacy import MAX_IMPORT_BYTES, PrivacyPolicyError
 from fastapi.staticfiles import StaticFiles
 
 from . import api_models as api
@@ -13,7 +17,7 @@ from .db import init_db
 from .collector import classify_public_vk_source, collector
 from .importers import import_uploaded_file
 from .ai.composition import get_insight_service, get_provider
-from .ai.contracts import ProviderError
+from .ai.contracts import LLMCircuitOpenError, ProviderError
 from .ai.service import AIConfigurationError, InsightValidationError
 from .ai.settings import get_settings, save_settings
 from .seed import seed_demo_data
@@ -25,12 +29,21 @@ STATIC_DIR = BASE_DIR / "static"
 app = FastAPI(
     title="VK Social Radar runtime API", version="0.4.2",
     description="IMPLEMENTED local single-user API. No authentication is enforced. "
-                "Loopback is the default deployment boundary, not an access-control guarantee. "
-                "U06 privacy/access policy remains planned. Canonical 11_OPENAPI.yaml is generated "
+                "Loopback launcher and local Host/same-origin checks enforce the browser boundary; the OS user remains trusted. "
+                "LLM endpoints are loopback-only without remote opt-in. No application authentication or encryption at rest. Canonical 11_OPENAPI.yaml is generated "
                 "from this app; /api is preserved. No /api/v1 aliases or target-only resources.",
     servers=[{"url": "http://127.0.0.1:8765", "description": "Default local loopback server"}],
 )
+app.add_middleware(LocalAccessMiddleware)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+
+@app.exception_handler(RequestValidationError)
+async def safe_validation_error(request, exc):
+    allowed = {"body", "query", "path", "header", "file", "import_type", "relation_type", "snapshot_date", "source_url", "person_id", "operation_id", "limit", "target", "kind"}
+    entries = [{"loc": [part if isinstance(part, int) or part in allowed else "input" for part in error["loc"]],
+                "msg": "Invalid request", "type": "validation_error"} for error in exc.errors()]
+    return JSONResponse(status_code=422, content={"detail": entries})
 
 
 @app.on_event("startup")
@@ -129,12 +142,12 @@ def post_snapshot(payload: dict[str, Any] = Body(..., json_schema_extra=SNAPSHOT
     try:
         return import_snapshot(payload)
     except (ValueError, KeyError, TypeError) as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        raise HTTPException(status_code=400, detail="Invalid input or operation failed") from exc
 
 
 @app.post("/api/import/file",
     operation_id="post_import_file",
-    description='JSON/CSV/TSV/HTML/HTM/ZIP import; import_type relations or message_stats (business-validated 400). Relations require friend/follower. Maximum 100 MiB checked after read. HTML remains UNKNOWN. Archive members commit independently. Returns real local stored_as path; privacy hardening is U06.',
+    description='JSON/CSV/TSV/HTML/HTM/ZIP import; import_type relations or message_stats (business-validated 400). Relations require friend/follower. Reads at most 100 MiB plus one byte; larger payloads rejected. HTML remains UNKNOWN. Archive expanded bytes capped at 100 MiB and entries at 1000; safe relative members parsed in memory, never extracted. Members commit independently. Upload filename traversal rejected; unique stored_as basename only.',
     responses=errors(400),
     openapi_extra={"x-implementation-status": "IMPLEMENTED", "x-audience": "public"},
     response_model=api.SnapshotFileResult | api.CountFileResult,
@@ -146,8 +159,8 @@ async def post_import_file(
     snapshot_date: str | None = Form(None),
 ) -> dict[str, Any]:
     try:
-        content = await file.read()
-        if len(content) > 100 * 1024 * 1024:
+        content = await file.read(MAX_IMPORT_BYTES + 1)
+        if len(content) > MAX_IMPORT_BYTES:
             raise ValueError("Файл больше 100 МБ")
         return import_uploaded_file(
             filename=file.filename or "upload.bin",
@@ -157,12 +170,12 @@ async def post_import_file(
             snapshot_date=snapshot_date,
         )
     except Exception as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        raise HTTPException(status_code=400, detail="Invalid input or operation failed") from exc
 
 
 @app.get("/api/settings",
     operation_id="settings_get",
-    description='String-valued settings mapping; current defaults are three lmstudio keys.',
+    description='String-valued settings mapping. Unsafe legacy LLM URL is returned as empty and blocked for inference without modifying stored data.',
     responses=errors(),
     openapi_extra={"x-implementation-status": "IMPLEMENTED", "x-audience": "public"})
 def settings_get() -> dict[str, str]:
@@ -171,11 +184,14 @@ def settings_get() -> dict[str, str]:
 
 @app.put("/api/settings",
     operation_id="settings_put",
-    description='Only three lmstudio keys stored, all values stringified and unknown keys ignored; response is the settings mapping.',
-    responses=errors(),
+    description='Only three lmstudio keys stored; base URL validated and normalized to loopback before any write, invalid is 400. Other values stringified, unknown keys ignored.',
+    responses=errors(400),
     openapi_extra={"x-implementation-status": "IMPLEMENTED", "x-audience": "public"})
 def settings_put(payload: dict[str, Any] = Body(..., json_schema_extra=SETTINGS_BODY)) -> dict[str, str]:
-    return save_settings(payload)
+    try:
+        return save_settings(payload)
+    except PrivacyPolicyError:
+        raise HTTPException(status_code=400, detail="Invalid local LLM endpoint") from None
 
 
 @app.get("/api/lmstudio/models",
@@ -189,7 +205,7 @@ def lm_models() -> list[dict[str, Any]]:
     try:
         return [model.as_dict() for model in get_provider().list_models()]
     except ProviderError as exc:
-        raise HTTPException(status_code=503, detail=f"LM Studio недоступна: {exc}") from exc
+        raise HTTPException(status_code=503, detail="LM Studio недоступна") from exc
     except Exception:
         raise HTTPException(status_code=503, detail="LM Studio недоступна") from None
 
@@ -206,7 +222,7 @@ def lm_test() -> dict[str, Any]:
         models = get_provider().list_models()
         return {"ok": True, "models_count": len(models), "models": [model.id for model in models]}
     except ProviderError as exc:
-        raise HTTPException(status_code=503, detail=f"LM Studio недоступна: {exc}") from exc
+        raise HTTPException(status_code=503, detail="LM Studio недоступна") from exc
     except Exception:
         raise HTTPException(status_code=503, detail="LM Studio недоступна") from None
 
@@ -225,7 +241,7 @@ def create_insight(person_id: int) -> dict[str, Any]:
     try:
         return get_insight_service().create(person_id, data)
     except (ProviderError, InsightValidationError, AIConfigurationError) as exc:
-        raise HTTPException(status_code=503, detail=f"Не удалось получить анализ: {exc}") from exc
+        raise HTTPException(status_code=503, detail=("Не удалось получить анализ: LLM generation temporarily unavailable" if isinstance(exc, LLMCircuitOpenError) else "Не удалось получить анализ")) from exc
     except Exception:
         raise HTTPException(status_code=503, detail="Не удалось получить анализ") from None
 
@@ -241,7 +257,7 @@ async def collector_start() -> dict[str, Any]:
     try:
         return await collector.start()
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Не удалось запустить Chromium: {exc}") from exc
+        raise HTTPException(status_code=500, detail="Не удалось запустить Chromium") from exc
 
 
 @app.post("/api/collector/close",
@@ -257,7 +273,7 @@ async def collector_close() -> dict[str, Any]:
 
 @app.delete("/api/collector/profile",
     operation_id="collector_delete_profile",
-    description='Closes browser and deletes its separate local profile. Returns deleted path. No API authentication is implemented.',
+    description='Closes browser and deletes its separate local profile. Returns a non-sensitive profile label; external profile overrides and unsafe filesystem links are rejected. No API authentication is implemented.',
     responses=errors(),
     openapi_extra={"x-implementation-status": "IMPLEMENTED", "x-audience": "public"},
     response_model=api.ProfileDeleted,
@@ -268,7 +284,7 @@ async def collector_delete_profile() -> dict[str, Any]:
 
 @app.get("/api/collector/status",
     operation_id="collector_status",
-    description='Collector state with extensible diagnostic/progress fields; does not authenticate the HTTP caller.',
+    description='Collector state with extensible progress fields; error categories and origin-only current_url, profile label instead of filesystem path. Does not authenticate the HTTP caller.',
     responses=errors(),
     openapi_extra={"x-implementation-status": "IMPLEMENTED", "x-audience": "public"},
     response_model=api.CollectorStatus,
@@ -288,7 +304,7 @@ async def collector_check_auth() -> dict[str, Any]:
     try:
         return await collector.check_auth()
     except Exception as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        raise HTTPException(status_code=400, detail="Invalid input or operation failed") from exc
 
 
 @app.post("/api/collector/navigate/{target}",
@@ -302,7 +318,7 @@ async def collector_navigate(target: str) -> dict[str, Any]:
     try:
         return await collector.navigate(target)
     except Exception as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        raise HTTPException(status_code=400, detail="Invalid input or operation failed") from exc
 
 
 @app.post("/api/collector/collect/{kind}",
@@ -316,7 +332,7 @@ async def collector_collect(kind: str) -> dict[str, Any]:
     try:
         return await collector.collect(kind)
     except Exception as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        raise HTTPException(status_code=400, detail="Invalid input or operation failed") from exc
 
 
 @app.get("/api/collector/source/classify",
@@ -345,7 +361,7 @@ async def collector_organization_source(payload: dict[str, Any] = Body(..., json
     try:
         return await collector.collect_public_organization_source(source_url, options)
     except Exception as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        raise HTTPException(status_code=400, detail="Invalid input or operation failed") from exc
 
 
 @app.post("/api/collector/organization-source/jobs",
@@ -431,7 +447,7 @@ async def collector_save_preview() -> dict[str, Any]:
     try:
         return save_collector_preview(collector.state.preview)
     except Exception as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        raise HTTPException(status_code=400, detail="Invalid input or operation failed") from exc
 
 @app.get("/api/dialogs",
     operation_id="get_collected_dialogs",

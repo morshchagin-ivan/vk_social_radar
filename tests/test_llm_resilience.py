@@ -281,7 +281,7 @@ class ResilienceTests(NetworkBlockedTests):
                 def handler(request):
                     calls.append(request)
                     return httpx.Response(status, text="Synthetic response")
-                adapter = LMStudioProvider("http://provider.invalid/v1", transport=httpx.MockTransport(handler))
+                adapter = LMStudioProvider("http://127.0.0.1:1234/v1", transport=httpx.MockTransport(handler))
                 self.provider = adapter
                 wrapper = self.wrap()
                 transient = status in {429, 500, 502, 503, 504}
@@ -321,7 +321,7 @@ class ResilienceAPITests(InsightFixture):
         self.enterContext(patch.object(composition, "LMStudioProvider", return_value=self.scripted))
         self.enterContext(patch.object(composition, "ResilientLLMProvider", return_value=self.wrapper))
         save_settings({"lmstudio_model": REQUEST.model})
-        self.client = TestClient(main.app)  # No production startup/lifespan.
+        self.client = TestClient(main.app, base_url="http://127.0.0.1")  # No production startup/lifespan.
         self.addCleanup(self.client.close)
 
     def request(self):
@@ -401,7 +401,7 @@ class CompositionTests(InsightFixture):
         self.assertTrue(all(binding is first for binding in bindings))
         save_settings({"lmstudio_model": "different", "lmstudio_temperature": "0.3"})
         self.assertIs(composition.get_provider(), first)
-        save_settings({"lmstudio_base_url": "http://other.invalid/v1"})
+        save_settings({"lmstudio_base_url": "http://127.0.0.1:1235/v1"})
         second = composition.get_provider()
         self.assertIsNot(first, second)
         self.assertEqual(second.state, CircuitState.CLOSED)

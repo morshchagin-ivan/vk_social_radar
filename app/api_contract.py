@@ -3,11 +3,13 @@ from .api_models import APIError
 
 
 def errors(*codes):
-    result = {500: {"description": "Unhandled server failure (default plain text).",
+    result = {400: {"model": APIError, "description": "Local Host rejected or invalid domain input."},
+              403: {"model": APIError, "description": "Origin or Fetch Metadata violates the local same-origin policy."},
+              500: {"description": "Unhandled server failure (safe plain text; raw exceptions suppressed).",
                     "content": {"text/plain": {"schema": {"type": "string"}}}}}
     for code in codes:
         result[code] = {"model": APIError, "description": {
-            400: "Domain/import/collector input or operation failure.",
+            400: "Local Host rejected, domain/import/collector input or operation failure (safe detail).",
             404: "Person, preview or collector operation not found.",
             500: "Chromium startup failure (JSON); unhandled failures remain plain text.",
             503: "Provider unavailable, invalid insight/configuration or generation circuit open.",
@@ -41,8 +43,8 @@ SNAPSHOT_BODY = {
 }
 
 SETTINGS_BODY = {
-    "description": "Accepts any JSON object. Only lmstudio_base_url, lmstudio_model, lmstudio_temperature are saved after Python str(value) conversion. Unknown keys ignored. No URL/temperature validation at this boundary; no retry/provider selector fields.",
-    "properties": {key: {} for key in ("lmstudio_base_url", "lmstudio_model", "lmstudio_temperature")},
+    "description": "Accepts a JSON object. Only three lmstudio keys are saved; unknown keys ignored. Base URL must be a parsed HTTP(S) loopback string with no userinfo/query/fragment; remote/LAN rejected 400, localhost normalized to 127.0.0.1. Model/temperature retain string conversion and no temperature bounds. No remote opt-in or retry/provider selector.",
+    "properties": {"lmstudio_base_url": {"type": "string"}, "lmstudio_model": {}, "lmstudio_temperature": {}},
 }
 
 ORGANIZATION_BODY = {

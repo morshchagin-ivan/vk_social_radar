@@ -295,7 +295,7 @@ class SnapshotTests(SnapshotFixture):
         self.assertEqual(services.dashboard()['friends']['current'], 0)
 
     def test_actual_api_import_dashboard_timeline_person(self):
-        with closing(TestClient(main.app)) as client:  # No production startup/lifespan.
+        with closing(TestClient(main.app, base_url="http://127.0.0.1")) as client:  # No production startup/lifespan.
             a = client.post('/api/import/snapshot', json={"relation_type": "friend", "snapshot_date": "2099-01-01", "people": [person(1)]})
             self.assertEqual(a.status_code, 200)
             b = client.post('/api/import/snapshot', json={"relation_type": "friend", "snapshot_date": "2099-01-02", "people": []})

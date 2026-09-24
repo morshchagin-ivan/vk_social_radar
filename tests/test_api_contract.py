@@ -239,7 +239,7 @@ class APIBehaviorTests(NetworkBlockedTests):
         self.enterContext(patch.object(main, 'init_db', side_effect=AssertionError('Lifespan forbidden')))
         self.enterContext(patch.object(main, 'seed_demo_data', side_effect=AssertionError('Seed forbidden')))
         self.enterContext(patch.object(main.collector.state, 'preview', None))
-        self.client = TestClient(main.app, raise_server_exceptions=False)  # deliberately no context manager/lifespan
+        self.client = TestClient(main.app, base_url="http://127.0.0.1", raise_server_exceptions=False)  # deliberately no context manager/lifespan
         self.addCleanup(self.client.close)
         self.schema = json.loads((ROOT / '11_OPENAPI.yaml').read_text(encoding='utf-8'))
 

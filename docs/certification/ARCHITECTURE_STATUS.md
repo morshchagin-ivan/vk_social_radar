@@ -6,7 +6,7 @@ Baseline 1.0 · 2026-09-23. Статусы capability: **IMPLEMENTED** — ко�
 
 | Capability / Pattern | Status | AS-IS evidence | Target | Backlog |
 |---|---|---|---|---|
-| Local-first | PARTIAL | [db](../../app/db.py) local files; [server](../../run_server.py) loopback; endpoint unrestricted | enforced local processing policy | [U06](05_UPGRADE_BACKLOG.md) |
+| Local-first controls | IMPLEMENTED in U06 bounded scope | fixed loopback, Host/Origin, local-only LLM, minimized diagnostics, path/Git/UI guards; [evidence](U06_PRIVACY_ACCESS_HARDENING_REPORT.md) | broader privacy assurance remains PARTIAL; no auth/encryption | U06 completed |
 | Playwright | IMPLEMENTED | [SafeVKCollector.start/collect](../../app/collector.py), API wired; live run не повторён | сохранить web session boundary | [U10](05_UPGRADE_BACKLOG.md) evolution |
 | Separate Chromium profile | IMPLEMENTED | collector.start → launch_persistent_context/user_data_dir; path test v03 | сохранение изоляции, privacy hardening | [U06](05_UPGRADE_BACKLOG.md) evolution |
 | Preview-before-save | IMPLEMENTED | [main.collector_save_preview](../../app/main.py), [services.save_collector_preview](../../app/services.py); friends/followers/dialogs | explicit validated snapshot commit | [U03](05_UPGRADE_BACKLOG.md) evolution |
@@ -34,7 +34,7 @@ Baseline 1.0 · 2026-09-23. Статусы capability: **IMPLEMENTED** — ко�
 | Scheduler | PLANNED | volatile asyncio jobs not scheduler | only with unattended collection requirement | [U14](05_UPGRADE_BACKLOG.md), P2 |
 | Observability | PARTIAL | diagnostics/status/traces; raw data risk | safe correlated events and metrics | [U06/U11](05_UPGRADE_BACKLOG.md) |
 | CI/CD | PLANNED | local bat scripts only | minimal reproducible test/release gate | [U07](05_UPGRADE_BACKLOG.md) |
-| Privacy hardening | PARTIAL | local defaults, whitelist/sanitizer; fail-open/raw DOM gaps | enforced policy and Git/package evidence | [U06](05_UPGRADE_BACKLOG.md) |
+| Privacy hardening | IMPLEMENTED bounded U06 / PARTIAL overall assurance | 31 security tests, tracked guard; no real data touched | operator/debug/history/full-erasure limitations remain; auth/encryption absent | U06 complete; U07/U11/U13 separate |
 | Distributed infrastructure / tenancy / federated training | NOT_PLANNED | no current requirement/load evidence | reconsider only on changed requirements | none; [rationale](ARCHITECTURAL_PATTERNS.md) |
 
 [Current C4](C4_CURRENT.md) и [Target C4](C4_TARGET.md) намеренно различаются. Ни один PLANNED row не повышается до IMPLEMENTED только из-за появления ADR.
@@ -44,3 +44,5 @@ U09 evidence: 25 new + 26 U05 + 14 U02 + 18 existing = 83 unittest PASS; 8 addit
 U03: 34 new tests; 117 standard unittest + 8 additional functions PASS. CREATING/FAILED/INCOMPLETE cannot become current. Collector previews and HTML extraction remain UNKNOWN/INCOMPLETE; explicit relation imports declare complete sets. Message_stats and AI are not snapshot-reproducible; RAG NO_RAG. [U03 evidence](U03_IMMUTABLE_SNAPSHOT_REPORT.md).
 
 U04: **Contract Governance IMPLEMENTED; current API drift RESOLVED**. [Canonical runtime OpenAPI](../../11_OPENAPI.yaml), [inventory](U04_RUNTIME_API_INVENTORY.md) and [report](U04_API_CONTRACT_REPORT.md): 29 public + 1 shell, 21 frontend calls, 23 new tests; 140 unittest + 8 additional PASS. Auth/RAG/Graph/Export remain unimplemented; full CI is U07.
+
+U06 adds explicit local privacy/access controls, not application login or encrypted storage. Latest gate: **171 unittest + 8 additional PASS**. [Threat model](THREAT_MODEL.md), [classification](DATA_CLASSIFICATION.md), [report](U06_PRIVACY_ACCESS_HARDENING_REPORT.md).

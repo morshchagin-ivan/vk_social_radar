@@ -1,39 +1,33 @@
 # ADR-001 — Local-first Architecture
 
-**Status:** ACCEPTED. **Implementation:** PARTIAL. **Date:** 2026-09-23.
-**Decision owners:** владелец VK Social Radar и architecture maintainer (роли; персонально не назначены).
-**Related backlog:** [U06 privacy, U11 NFR](../certification/05_UPGRADE_BACKLOG.md).
+**Status:** ACCEPTED. **Implementation:** IMPLEMENTED for U06 bounded local controls; broader privacy assurance remains PARTIAL. **Updated:** 2026-09-24.
+**Decision owners:** project owner and architecture maintainer.
+**Related backlog:** [U06 complete, U07 integration, U11 measurement](../certification/05_UPGRADE_BACKLOG.md).
 
 ## Context
 
-[Specification](../../spec.md), Product Principles/Privacy/Constraints: персональная локальная система без обязательной cloud synchronization. Сейчас local storage/bind уже есть, однако configurable LLM endpoint и diagnostics не обеспечивают строгую privacy guarantee.
+The local single-user application holds relations, dialogs, message aggregates and an authenticated Chromium session. Loopback defaults alone did not constrain arbitrary LLM URLs, hostile browser requests, raw diagnostics or exception leakage. The OS account is trusted; multi-user/zero-trust IAM is outside scope.
 
 ## Decision
 
-Сохранить local-first deployment: UI/backend, SQLite/files и inference на пользовательской машине. VK web — ожидаемый внешний источник для явного сбора. Non-AI чтение локальных данных не должно требовать VK/LLM. Strict local-only inference policy и минимизация diagnostics принимаются как target U06; remote provider не является скрытым fallback.
+Keep the fixed loopback launcher and local storage. Enforce local Host/same-origin browser checks without inventing API authentication. Require parsed HTTP(S) loopback LLM URLs at settings and outbound adapter boundaries; no remote/LAN opt-in or fallback. Disable environment proxies and redirects. VK web collection remains an explicit external activity under its fail-closed host policy.
 
-## Current implementation status
+New diagnostics contain only allowlisted counters; direct recognized diagnostic files older than 30 days expire on collector start/diagnostic write. Protect dedicated storage paths against links/reparse points, bound imports, keep profile outside static, escape UI text and reject executable href schemes. Use safe error categories and a tracked disclosure guard.
 
-PARTIAL: [run_server.py](../../run_server.py) слушает 127.0.0.1:8765; [db.py](../../app/db.py) хранит локально. [lmstudio.py](../../app/lmstudio.py) имеет localhost default, но принимает arbitrary URL. Отсутствие обязательной cloud LLM подтверждено code review, а не полным network forensic test.
+## Current implementation / evidence
+
+[privacy.py](../../app/privacy.py), [access.py](../../app/access.py), [collector](../../app/collector.py), [provider](../../app/ai/providers/lmstudio.py), [tracked guard](../../scripts/check_privacy.py). [31 U06 tests](../../tests/test_privacy.py), 171 unittest + 8 additional PASS; no real DB/profile/network used. [Report](../certification/U06_PRIVACY_ACCESS_HARDENING_REPORT.md), [threat model](../certification/THREAT_MODEL.md), [classification](../certification/DATA_CLASSIFICATION.md).
 
 ## Alternatives considered
 
-Cloud-hosted analytics/inference; remote collector; hybrid sync. Не выбраны для текущего scope, поскольку добавляют передачу персональных данных и внешний operational dependency. Local-first не означает offline collection: сбор VK требует сети.
+Remote inference opt-in, broad private-LAN allowlisting, bearer token/login infrastructure and unrestricted diagnostics. They add exposure/complexity without a current single-user requirement. A future remote inference feature requires a separate explicit decision and data-transfer disclosure.
 
-## Consequences
+## Consequences and security impact
 
-- Positive: локальный контроль storage, простое single-user deployment, чтение истории без VK.
-- Negative: пользователь обслуживает local LLM/profile/backups; ресурсы ограничены одним компьютером.
-- Risks: arbitrary endpoint, raw diagnostics, неустановленная retention policy; local storage сам по себе не является encryption/access control.
+Positive: testable deny-by-default outbound inference, same-origin browser boundary, reduced diagnostic/error disclosure, bounded storage operations. Negative: previously remote or credentialed LLM settings must be explicitly replaced with safe local settings; former external Chromium profile override is ignored. No user data or profile migration is performed by the build.
 
-## Security/Privacy impact
+Residual: local OS/server compromise, unencrypted files, user-managed backups, third-party debug configuration, multipart spooling/CPU limits, broader retention and full erasure. Host/Origin checks do not authenticate a local process. Retention is trigger-based, not continuous or a secure-wipe guarantee. Source guards do not certify every historical/binary secret.
 
-U06 должен ограничить endpoints, закрыть fail-open browser guard и проверить реальный Git/package состав. Нельзя утверждать отсутствие cookies/private data в Git: metadata копии отсутствует. [Security status](../certification/SECURITY_PRIVACY_STATUS.md).
+## Evolution
 
-## Validation/Evidence
-
-[Audit 00](../certification/00_REPOSITORY_AS_IS.md), `run_server` bind, `db.get_connection`, `lmstudio._base_url`; prior audit health probe. Target validation: negative endpoint tests, safe log fixtures, explicit packaging check. Эти target проверки ещё не выполнены.
-
-## Evolution path
-
-U06 → U11 measurable privacy/retention → U07 regression gates; provider U05 обязан сохранить local policy. Изменение на remote inference требует отдельного явного решения, не незаметной смены defaults.
+U07 integrates the existing gates into unified runner/CI. U11 measures resource/logging/retention budgets; U13 addresses full lifecycle/import atomicity. Auth or remote inference is a new scope decision, not an implied completion of U06.

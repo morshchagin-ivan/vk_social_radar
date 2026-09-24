@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-import os
 import re
 import shutil
 from dataclasses import dataclass, field
@@ -15,8 +14,9 @@ from uuid import uuid4
 from playwright.async_api import BrowserContext, Page, Playwright, async_playwright
 
 from .db import BASE_DIR
+from .privacy import diagnostic_summary, prune_diagnostics, safe_directory, safe_url_display
 
-PROFILE_DIR = Path(os.getenv("VK_COLLECTOR_PROFILE_DIR") or BASE_DIR / "data" / "vk_browser_profile")
+PROFILE_DIR = BASE_DIR / "data" / "vk_browser_profile"
 DIAGNOSTICS_DIR = BASE_DIR / "logs" / "collector"
 PREVIEW_DIR = BASE_DIR / "data" / "collector_previews"
 
@@ -32,8 +32,6 @@ ALLOWED_HOST_SUFFIXES = (
     "vkvideo.ru",
     "vkuservideo.net",
     "userapi.com",
-    "localhost",
-    "127.0.0.1",
 )
 
 RESERVED_PATHS = {
@@ -188,14 +186,16 @@ class SafeVKCollector:
             if self.context and self.page:
                 return await self.get_status()
 
-            PROFILE_DIR.mkdir(parents=True, exist_ok=True)
-            DIAGNOSTICS_DIR.mkdir(parents=True, exist_ok=True)
-            PREVIEW_DIR.mkdir(parents=True, exist_ok=True)
+            safe_directory(PROFILE_DIR).mkdir(parents=True, exist_ok=True)
+            safe_directory(DIAGNOSTICS_DIR).mkdir(parents=True, exist_ok=True)
+            prune_diagnostics(DIAGNOSTICS_DIR)
+            safe_directory(PREVIEW_DIR).mkdir(parents=True, exist_ok=True)
 
             self.playwright = await async_playwright().start()
             self.context = await self.playwright.chromium.launch_persistent_context(
                 user_data_dir=str(PROFILE_DIR),
                 headless=False,
+                service_workers="block",
                 viewport={"width": 1440, "height": 940},
                 locale="ru-RU",
                 args=[
@@ -211,9 +211,10 @@ class SafeVKCollector:
             self.context.set_default_navigation_timeout(45_000)
 
             await self.context.route("**/*", self._route_request)
+            await self.context.route_web_socket("**/*", self._route_web_socket)
             pages = self.context.pages
             self.page = pages[0] if pages else await self.context.new_page()
-            self.page.on("pageerror", lambda exc: self._set_error(f"Page error: {exc}"))
+            self.page.on("pageerror", lambda exc: self._set_error("Page error"))
 
             self.state.status = "running"
             self.state.last_error = None
@@ -223,18 +224,39 @@ class SafeVKCollector:
 
     async def _route_request(self, route, request) -> None:
         try:
-            host = (urlparse(request.url).hostname or "").lower()
-            allowed = any(host == suffix or host.endswith("." + suffix) for suffix in ALLOWED_HOST_SUFFIXES)
-            if allowed or request.url.startswith(("data:", "blob:", "about:")):
+            url = urlparse(request.url)
+            host = (url.hostname or "").lower()
+            allowed = (url.scheme in {"http", "https"} and url.username is None and
+                       any(host == suffix or host.endswith("." + suffix) for suffix in ALLOWED_HOST_SUFFIXES))
+            if allowed or url.scheme in {"data", "blob", "about"}:
                 await route.continue_()
-            else:
-                self.state.blocked_hosts.add(host or request.url[:80])
-                await route.abort()
+                return
+            self.state.blocked_hosts.add("blocked-external-host")
         except Exception:
-            await route.continue_()
+            self.state.last_error = "Collector request blocked"
+        try:
+            await route.abort()
+        except Exception:
+            pass  # Fail closed: never retry continue_ on a guard failure.
+
+    async def _route_web_socket(self, route) -> None:
+        try:
+            url = urlparse(route.url)
+            host = (url.hostname or "").lower()
+            if (url.scheme in {"ws", "wss"} and url.username is None and
+                    any(host == suffix or host.endswith("." + suffix) for suffix in ALLOWED_HOST_SUFFIXES)):
+                route.connect_to_server()
+                return
+            self.state.blocked_hosts.add("blocked-external-host")
+        except Exception:
+            self.state.last_error = "Collector request blocked"
+        try:
+            await route.close(code=1008, reason="Blocked")
+        except Exception:
+            pass  # An unconnected route must never connect after a guard failure.
 
     def _set_error(self, message: str) -> None:
-        self.state.last_error = message
+        self.state.last_error = "Collector page error"
 
     async def _wait_soft(self) -> None:
         await asyncio.sleep(1.2)
@@ -255,10 +277,11 @@ class SafeVKCollector:
 
     async def delete_profile(self) -> dict[str, Any]:
         await self.close()
-        if PROFILE_DIR.exists():
-            shutil.rmtree(PROFILE_DIR)
+        profile = safe_directory(PROFILE_DIR)
+        if profile.exists():
+            shutil.rmtree(profile)
         self.state.preview = None
-        return {"ok": True, "deleted": str(PROFILE_DIR)}
+        return {"ok": True, "deleted": "dedicated-local-profile"}
 
     async def get_status(self) -> dict[str, Any]:
         if self.page:
@@ -266,17 +289,17 @@ class SafeVKCollector:
                 self.state.current_url = self.page.url
                 self.state.authenticated = await self._detect_authenticated()
             except Exception as exc:
-                self.state.last_error = str(exc)
+                self.state.last_error = "Collector status unavailable"
         active = self.operations.get(self.active_operation_id or "")
         return {
             "status": self.state.status,
-            "current_url": self.state.current_url,
+            "current_url": safe_url_display(self.state.current_url),
             "authenticated": self.state.authenticated,
             "last_error": self.state.last_error,
             "last_action": self.state.last_action,
             "has_preview": bool(self.state.preview),
             "blocked_hosts": sorted(self.state.blocked_hosts),
-            "profile_dir": str(PROFILE_DIR),
+            "profile_dir": "dedicated-local-profile",
             "operation_id": active.operation_id if active else "",
             "operation_state": active.state if active else "",
             "collection_surface": active.collection_surface if active else "",
@@ -659,8 +682,9 @@ class SafeVKCollector:
             }
             self.state.preview = preview
             self.state.last_action = f"collect:{kind}"
-            preview_path = PREVIEW_DIR / f"preview_{kind}_{datetime.now():%Y%m%d_%H%M%S}.json"
-            preview_path.write_text(json.dumps(preview, ensure_ascii=False, indent=2), encoding="utf-8")
+            preview_path = safe_directory(PREVIEW_DIR) / f"preview_{kind}_{datetime.now():%Y%m%d_%H%M%S}_{uuid4().hex}.json"
+            with preview_path.open('x', encoding='utf-8') as output:
+                json.dump(preview, output, ensure_ascii=False, indent=2)
             return preview
 
     async def _find_scroll_target(self) -> dict[str, Any]:
@@ -2173,8 +2197,9 @@ class SafeVKCollector:
             )
             self.state.preview = result
             self.state.last_action = "collect_public_organization_source"
-            preview_path = PREVIEW_DIR / f"preview_organization_source_{datetime.now():%Y%m%d_%H%M%S}.json"
-            preview_path.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+            preview_path = safe_directory(PREVIEW_DIR) / f"preview_organization_source_{datetime.now():%Y%m%d_%H%M%S}_{uuid4().hex}.json"
+            with preview_path.open('x', encoding='utf-8') as output:
+                json.dump(result, output, ensure_ascii=False, indent=2)
             return result
 
     async def start_organization_source_job(self, source_url: str, options: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -2260,13 +2285,13 @@ class SafeVKCollector:
             })
             self._mark_operation_progress(operation, state=state)
         except Exception as exc:
-            operation.last_error = str(exc)
+            operation.last_error = "Collection failed"
             operation.result = {
                 "source": "vk",
                 "source_url": operation.source_url,
                 "profiles": [],
                 "member_index": {"profiles": [], "members_discovered": operation.members_discovered, "members_deduped": operation.members_deduped},
-                "diagnostics": {"status": "COLLECTION_FAILED", "reason": str(exc), "auth_state": "UNKNOWN"},
+                "diagnostics": {"status": "COLLECTION_FAILED", "reason": "Collection failed", "auth_state": "UNKNOWN"},
             }
             operation.result_available = True
             self._mark_operation_progress(operation, state="FAILED", diagnostics={"status": "COLLECTION_FAILED"})
@@ -2650,29 +2675,17 @@ class SafeVKCollector:
         return value[:100]
 
     async def _save_diagnostics(self, kind: str, report: dict[str, Any]) -> str:
-        assert self.page
+        # No page content/title/URL/screenshot capture. Existing raw files are
+        # retained only until the bounded runtime retention trigger expires them.
+        storage = safe_directory(DIAGNOSTICS_DIR)
+        storage.mkdir(parents=True, exist_ok=True)
+        prune_diagnostics(storage)
+        summary = diagnostic_summary(kind, report)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        base = DIAGNOSTICS_DIR / f"{kind}_{timestamp}"
-        html_path = base.with_suffix(".html")
-        png_path = base.with_suffix(".png")
-        json_path = base.with_suffix(".json")
-
-        html_path.write_text(await self.page.content(), encoding="utf-8")
-        await self.page.screenshot(path=str(png_path), full_page=True)
-        json_path.write_text(
-            json.dumps(
-                {
-                    "url": self.page.url,
-                    "title": await self.page.title(),
-                    "report": report,
-                    "blocked_hosts": sorted(self.state.blocked_hosts),
-                },
-                ensure_ascii=False,
-                indent=2,
-            ),
-            encoding="utf-8",
-        )
-        return str(base)
+        name = f"{summary['kind']}_{timestamp}_{uuid4().hex}.json"
+        with (storage / name).open('x', encoding='utf-8') as output:
+            json.dump(summary, output, ensure_ascii=False, indent=2)
+        return name
 
 
 collector = SafeVKCollector()

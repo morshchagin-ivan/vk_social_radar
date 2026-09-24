@@ -4,7 +4,7 @@ Baseline 1.0 · 2026-09-23. Решения формализованы по по�
 
 | ADR | Decision status | Implementation status | Backlog |
 |---|---|---|---|
-| [001 Local-first](ADR-001-local-first-architecture.md) | ACCEPTED | PARTIAL | U06 |
+| [001 Local-first](ADR-001-local-first-architecture.md) | ACCEPTED | IMPLEMENTED U06 bounded controls; overall privacy assurance PARTIAL | U06 completed; U07/U11/U13 residuals |
 | [002 Playwright instead of VK API](ADR-002-playwright-instead-of-vk-api.md) | ACCEPTED | IMPLEMENTED; DOM fragility remains | U10/U06 |
 | [003 Immutable Snapshot source of truth](ADR-003-immutable-snapshot-source-of-truth.md) | ACCEPTED | IMPLEMENTED relation foundation; messages excluded | U03 completed |
 | [004 Local LLM provider abstraction](ADR-004-local-llm-provider-abstraction.md) | ACCEPTED | IMPLEMENTED provider/AI DIP; U09 resilience implemented | U05/U09 completed |

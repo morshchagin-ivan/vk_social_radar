@@ -8,9 +8,11 @@ import zipfile
 from datetime import date
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 from .db import IMPORT_DIR, get_connection
 from .services import import_message_stats, import_snapshot
+from .privacy import MAX_IMPORT_BYTES, PrivacyPolicyError, archive_member_name, safe_directory, upload_name
 
 
 def _normalize_person(raw: dict[str, Any]) -> dict[str, Any]:
@@ -95,10 +97,18 @@ def import_uploaded_file(
     relation_type: str | None = None,
     snapshot_date: str | None = None,
 ) -> dict[str, Any]:
-    IMPORT_DIR.mkdir(parents=True, exist_ok=True)
-    safe_name = re.sub(r"[^A-Za-zА-Яа-я0-9._-]+", "_", Path(filename).name)
-    stored_path = IMPORT_DIR / safe_name
-    stored_path.write_bytes(content)
+    safe_name = upload_name(filename)
+    if len(content) > MAX_IMPORT_BYTES:
+        raise PrivacyPolicyError("Import size limit exceeded")
+    if import_type not in {"relations", "message_stats"}:
+        raise PrivacyPolicyError("Unsupported import type")
+    storage = safe_directory(IMPORT_DIR)
+    storage.mkdir(parents=True, exist_ok=True)
+    stored_path = storage / f"{uuid4().hex}_{safe_name}"
+    if stored_path.resolve().parent != storage.resolve():
+        raise PrivacyPolicyError("Unsafe import path")
+    with stored_path.open('xb') as output:
+        output.write(content)
 
     with get_connection() as conn:
         cursor = conn.execute(
@@ -121,13 +131,13 @@ def import_uploaded_file(
                 (imported_rows, job_id),
             )
         result["job_id"] = job_id
-        result["stored_as"] = str(stored_path)
+        result["stored_as"] = stored_path.name
         return result
     except Exception as exc:
         with get_connection() as conn:
             conn.execute(
                 "UPDATE import_jobs SET status='error', error_text=? WHERE id=?",
-                (str(exc), job_id),
+                ("Import failed", job_id),
             )
         raise
 
@@ -142,13 +152,24 @@ def _import_zip(
     imported = 0
     processed = []
     with zipfile.ZipFile(io.BytesIO(content)) as archive:
-        for info in archive.infolist():
+        entries = archive.infolist()
+        if len(entries) > 1000 or sum(item.file_size for item in entries) > MAX_IMPORT_BYTES:
+            raise PrivacyPolicyError("Archive size limit exceeded")
+        remaining = MAX_IMPORT_BYTES
+        for info in entries:
             if info.is_dir():
                 continue
             suffix = Path(info.filename).suffix.lower()
             if suffix not in {".json", ".csv", ".tsv", ".html", ".htm"}:
                 continue
-            rows = _rows_from_file(info.filename, archive.read(info))
+            # Members are parsed in memory, never extracted; safe relative folders remain supported.
+            archive_member_name(info.filename)
+            with archive.open(info) as member:
+                content = member.read(remaining + 1)
+            if len(content) > remaining:
+                raise PrivacyPolicyError("Archive size limit exceeded")
+            remaining -= len(content)
+            rows = _rows_from_file(info.filename, content)
             result = _dispatch(rows, import_type, relation_type, snapshot_date, f"{source_reference}!{info.filename}")
             imported += int(result.get("count") or result.get("imported") or 0)
             processed.append(info.filename)

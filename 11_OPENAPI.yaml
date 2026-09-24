@@ -247,12 +247,26 @@
             "type": "boolean"
           },
           "last_action": {
-            "title": "Last Action",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Action"
           },
           "last_error": {
-            "title": "Last Error",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Error"
           },
           "members_deduped": {
             "title": "Members Deduped",
@@ -1525,7 +1539,7 @@
     }
   },
   "info": {
-    "description": "IMPLEMENTED local single-user API. No authentication is enforced. Loopback is the default deployment boundary, not an access-control guarantee. U06 privacy/access policy remains planned. Canonical 11_OPENAPI.yaml is generated from this app; /api is preserved. No /api/v1 aliases or target-only resources.",
+    "description": "IMPLEMENTED local single-user API. No authentication is enforced. Loopback launcher and local Host/same-origin checks enforce the browser boundary; the OS user remains trusted. LLM endpoints are loopback-only without remote opt-in. No application authentication or encryption at rest. Canonical 11_OPENAPI.yaml is generated from this app; /api is preserved. No /api/v1 aliases or target-only resources.",
     "title": "VK Social Radar runtime API",
     "version": "0.4.2"
   },
@@ -1546,6 +1560,26 @@
             },
             "description": "HTML application shell"
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Local Host rejected or invalid domain input."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Origin or Fetch Metadata violates the local same-origin policy."
+          },
           "500": {
             "content": {
               "text/plain": {
@@ -1554,7 +1588,7 @@
                 }
               }
             },
-            "description": "Unhandled server failure (default plain text)."
+            "description": "Unhandled server failure (safe plain text; raw exceptions suppressed)."
           }
         },
         "summary": "Index",
@@ -1595,6 +1629,26 @@
             },
             "description": "Successful Response"
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Local Host rejected or invalid domain input."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Origin or Fetch Metadata violates the local same-origin policy."
+          },
           "422": {
             "content": {
               "application/json": {
@@ -1613,7 +1667,7 @@
                 }
               }
             },
-            "description": "Unhandled server failure (default plain text)."
+            "description": "Unhandled server failure (safe plain text; raw exceptions suppressed)."
           }
         },
         "summary": "Get Changes",
@@ -1644,7 +1698,17 @@
                 }
               }
             },
-            "description": "Domain/import/collector input or operation failure."
+            "description": "Local Host rejected, domain/import/collector input or operation failure (safe detail)."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Origin or Fetch Metadata violates the local same-origin policy."
           },
           "500": {
             "content": {
@@ -1654,7 +1718,7 @@
                 }
               }
             },
-            "description": "Unhandled server failure (default plain text)."
+            "description": "Unhandled server failure (safe plain text; raw exceptions suppressed)."
           }
         },
         "summary": "Collector Check Auth",
@@ -1677,6 +1741,26 @@
             },
             "description": "Successful Response"
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Local Host rejected or invalid domain input."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Origin or Fetch Metadata violates the local same-origin policy."
+          },
           "500": {
             "content": {
               "text/plain": {
@@ -1685,7 +1769,7 @@
                 }
               }
             },
-            "description": "Unhandled server failure (default plain text)."
+            "description": "Unhandled server failure (safe plain text; raw exceptions suppressed)."
           }
         },
         "summary": "Collector Close",
@@ -1727,7 +1811,17 @@
                 }
               }
             },
-            "description": "Domain/import/collector input or operation failure."
+            "description": "Local Host rejected, domain/import/collector input or operation failure (safe detail)."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Origin or Fetch Metadata violates the local same-origin policy."
           },
           "422": {
             "content": {
@@ -1747,7 +1841,7 @@
                 }
               }
             },
-            "description": "Unhandled server failure (default plain text)."
+            "description": "Unhandled server failure (safe plain text; raw exceptions suppressed)."
           }
         },
         "summary": "Collector Collect",
@@ -1789,7 +1883,17 @@
                 }
               }
             },
-            "description": "Domain/import/collector input or operation failure."
+            "description": "Local Host rejected, domain/import/collector input or operation failure (safe detail)."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Origin or Fetch Metadata violates the local same-origin policy."
           },
           "422": {
             "content": {
@@ -1809,7 +1913,7 @@
                 }
               }
             },
-            "description": "Unhandled server failure (default plain text)."
+            "description": "Unhandled server failure (safe plain text; raw exceptions suppressed)."
           }
         },
         "summary": "Collector Navigate",
@@ -1862,7 +1966,17 @@
                 }
               }
             },
-            "description": "Domain/import/collector input or operation failure."
+            "description": "Local Host rejected, domain/import/collector input or operation failure (safe detail)."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Origin or Fetch Metadata violates the local same-origin policy."
           },
           "422": {
             "content": {
@@ -1882,7 +1996,7 @@
                 }
               }
             },
-            "description": "Unhandled server failure (default plain text)."
+            "description": "Unhandled server failure (safe plain text; raw exceptions suppressed)."
           }
         },
         "summary": "Collector Organization Source",
@@ -1943,7 +2057,17 @@
                 }
               }
             },
-            "description": "Domain/import/collector input or operation failure."
+            "description": "Local Host rejected, domain/import/collector input or operation failure (safe detail)."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Origin or Fetch Metadata violates the local same-origin policy."
           },
           "422": {
             "content": {
@@ -1963,7 +2087,7 @@
                 }
               }
             },
-            "description": "Unhandled server failure (default plain text)."
+            "description": "Unhandled server failure (safe plain text; raw exceptions suppressed)."
           }
         },
         "summary": "Collector Organization Source Job Create",
@@ -1997,6 +2121,26 @@
             },
             "description": "Successful Response"
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Local Host rejected or invalid domain input."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Origin or Fetch Metadata violates the local same-origin policy."
+          },
           "404": {
             "content": {
               "application/json": {
@@ -2025,7 +2169,7 @@
                 }
               }
             },
-            "description": "Unhandled server failure (default plain text)."
+            "description": "Unhandled server failure (safe plain text; raw exceptions suppressed)."
           }
         },
         "summary": "Collector Organization Source Job Status",
@@ -2059,6 +2203,26 @@
             },
             "description": "Successful Response"
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Local Host rejected or invalid domain input."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Origin or Fetch Metadata violates the local same-origin policy."
+          },
           "404": {
             "content": {
               "application/json": {
@@ -2087,7 +2251,7 @@
                 }
               }
             },
-            "description": "Unhandled server failure (default plain text)."
+            "description": "Unhandled server failure (safe plain text; raw exceptions suppressed)."
           }
         },
         "summary": "Collector Organization Source Job Cancel",
@@ -2121,6 +2285,26 @@
             },
             "description": "Successful Response"
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Local Host rejected or invalid domain input."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Origin or Fetch Metadata violates the local same-origin policy."
+          },
           "404": {
             "content": {
               "application/json": {
@@ -2149,7 +2333,7 @@
                 }
               }
             },
-            "description": "Unhandled server failure (default plain text)."
+            "description": "Unhandled server failure (safe plain text; raw exceptions suppressed)."
           }
         },
         "summary": "Collector Organization Source Job Result",
@@ -2180,6 +2364,26 @@
             },
             "description": "Successful Response"
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Local Host rejected or invalid domain input."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Origin or Fetch Metadata violates the local same-origin policy."
+          },
           "404": {
             "content": {
               "application/json": {
@@ -2198,7 +2402,7 @@
                 }
               }
             },
-            "description": "Unhandled server failure (default plain text)."
+            "description": "Unhandled server failure (safe plain text; raw exceptions suppressed)."
           }
         },
         "summary": "Collector Preview",
@@ -2208,7 +2412,7 @@
     },
     "/api/collector/profile": {
       "delete": {
-        "description": "Closes browser and deletes its separate local profile. Returns deleted path. No API authentication is implemented.",
+        "description": "Closes browser and deletes its separate local profile. Returns a non-sensitive profile label; external profile overrides and unsafe filesystem links are rejected. No API authentication is implemented.",
         "operationId": "collector_delete_profile",
         "responses": {
           "200": {
@@ -2221,6 +2425,26 @@
             },
             "description": "Successful Response"
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Local Host rejected or invalid domain input."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Origin or Fetch Metadata violates the local same-origin policy."
+          },
           "500": {
             "content": {
               "text/plain": {
@@ -2229,7 +2453,7 @@
                 }
               }
             },
-            "description": "Unhandled server failure (default plain text)."
+            "description": "Unhandled server failure (safe plain text; raw exceptions suppressed)."
           }
         },
         "summary": "Collector Delete Profile",
@@ -2268,7 +2492,17 @@
                 }
               }
             },
-            "description": "Domain/import/collector input or operation failure."
+            "description": "Local Host rejected, domain/import/collector input or operation failure (safe detail)."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Origin or Fetch Metadata violates the local same-origin policy."
           },
           "404": {
             "content": {
@@ -2288,7 +2522,7 @@
                 }
               }
             },
-            "description": "Unhandled server failure (default plain text)."
+            "description": "Unhandled server failure (safe plain text; raw exceptions suppressed)."
           }
         },
         "summary": "Collector Save Preview",
@@ -2322,6 +2556,26 @@
             },
             "description": "Successful Response"
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Local Host rejected or invalid domain input."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Origin or Fetch Metadata violates the local same-origin policy."
+          },
           "422": {
             "content": {
               "application/json": {
@@ -2340,7 +2594,7 @@
                 }
               }
             },
-            "description": "Unhandled server failure (default plain text)."
+            "description": "Unhandled server failure (safe plain text; raw exceptions suppressed)."
           }
         },
         "summary": "Collector Source Classify",
@@ -2362,6 +2616,26 @@
               }
             },
             "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Local Host rejected or invalid domain input."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Origin or Fetch Metadata violates the local same-origin policy."
           },
           "500": {
             "content": {
@@ -2386,7 +2660,7 @@
     },
     "/api/collector/status": {
       "get": {
-        "description": "Collector state with extensible diagnostic/progress fields; does not authenticate the HTTP caller.",
+        "description": "Collector state with extensible progress fields; error categories and origin-only current_url, profile label instead of filesystem path. Does not authenticate the HTTP caller.",
         "operationId": "collector_status",
         "responses": {
           "200": {
@@ -2399,6 +2673,26 @@
             },
             "description": "Successful Response"
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Local Host rejected or invalid domain input."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Origin or Fetch Metadata violates the local same-origin policy."
+          },
           "500": {
             "content": {
               "text/plain": {
@@ -2407,7 +2701,7 @@
                 }
               }
             },
-            "description": "Unhandled server failure (default plain text)."
+            "description": "Unhandled server failure (safe plain text; raw exceptions suppressed)."
           }
         },
         "summary": "Collector Status",
@@ -2430,6 +2724,26 @@
             },
             "description": "Successful Response"
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Local Host rejected or invalid domain input."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Origin or Fetch Metadata violates the local same-origin policy."
+          },
           "500": {
             "content": {
               "text/plain": {
@@ -2438,7 +2752,7 @@
                 }
               }
             },
-            "description": "Unhandled server failure (default plain text)."
+            "description": "Unhandled server failure (safe plain text; raw exceptions suppressed)."
           }
         },
         "summary": "Get Dashboard",
@@ -2479,6 +2793,26 @@
             },
             "description": "Successful Response"
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Local Host rejected or invalid domain input."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Origin or Fetch Metadata violates the local same-origin policy."
+          },
           "422": {
             "content": {
               "application/json": {
@@ -2497,7 +2831,7 @@
                 }
               }
             },
-            "description": "Unhandled server failure (default plain text)."
+            "description": "Unhandled server failure (safe plain text; raw exceptions suppressed)."
           }
         },
         "summary": "Get Collected Dialogs",
@@ -2520,6 +2854,26 @@
             },
             "description": "Successful Response"
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Local Host rejected or invalid domain input."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Origin or Fetch Metadata violates the local same-origin policy."
+          },
           "500": {
             "content": {
               "text/plain": {
@@ -2528,7 +2882,7 @@
                 }
               }
             },
-            "description": "Unhandled server failure (default plain text)."
+            "description": "Unhandled server failure (safe plain text; raw exceptions suppressed)."
           }
         },
         "summary": "Health",
@@ -2538,7 +2892,7 @@
     },
     "/api/import/file": {
       "post": {
-        "description": "JSON/CSV/TSV/HTML/HTM/ZIP import; import_type relations or message_stats (business-validated 400). Relations require friend/follower. Maximum 100 MiB checked after read. HTML remains UNKNOWN. Archive members commit independently. Returns real local stored_as path; privacy hardening is U06.",
+        "description": "JSON/CSV/TSV/HTML/HTM/ZIP import; import_type relations or message_stats (business-validated 400). Relations require friend/follower. Reads at most 100 MiB plus one byte; larger payloads rejected. HTML remains UNKNOWN. Archive expanded bytes capped at 100 MiB and entries at 1000; safe relative members parsed in memory, never extracted. Members commit independently. Upload filename traversal rejected; unique stored_as basename only.",
         "operationId": "post_import_file",
         "requestBody": {
           "content": {
@@ -2577,7 +2931,17 @@
                 }
               }
             },
-            "description": "Domain/import/collector input or operation failure."
+            "description": "Local Host rejected, domain/import/collector input or operation failure (safe detail)."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Origin or Fetch Metadata violates the local same-origin policy."
           },
           "422": {
             "content": {
@@ -2597,7 +2961,7 @@
                 }
               }
             },
-            "description": "Unhandled server failure (default plain text)."
+            "description": "Unhandled server failure (safe plain text; raw exceptions suppressed)."
           }
         },
         "summary": "Post Import File",
@@ -2719,7 +3083,17 @@
                 }
               }
             },
-            "description": "Domain/import/collector input or operation failure."
+            "description": "Local Host rejected, domain/import/collector input or operation failure (safe detail)."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Origin or Fetch Metadata violates the local same-origin policy."
           },
           "422": {
             "content": {
@@ -2739,7 +3113,7 @@
                 }
               }
             },
-            "description": "Unhandled server failure (default plain text)."
+            "description": "Unhandled server failure (safe plain text; raw exceptions suppressed)."
           }
         },
         "summary": "Post Snapshot",
@@ -2766,6 +3140,26 @@
             },
             "description": "Successful Response"
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Local Host rejected or invalid domain input."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Origin or Fetch Metadata violates the local same-origin policy."
+          },
           "500": {
             "content": {
               "text/plain": {
@@ -2774,7 +3168,7 @@
                 }
               }
             },
-            "description": "Unhandled server failure (default plain text)."
+            "description": "Unhandled server failure (safe plain text; raw exceptions suppressed)."
           },
           "503": {
             "content": {
@@ -2807,6 +3201,26 @@
             },
             "description": "Successful Response"
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Local Host rejected or invalid domain input."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Origin or Fetch Metadata violates the local same-origin policy."
+          },
           "500": {
             "content": {
               "text/plain": {
@@ -2815,7 +3229,7 @@
                 }
               }
             },
-            "description": "Unhandled server failure (default plain text)."
+            "description": "Unhandled server failure (safe plain text; raw exceptions suppressed)."
           },
           "503": {
             "content": {
@@ -2852,6 +3266,26 @@
             },
             "description": "Successful Response"
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Local Host rejected or invalid domain input."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Origin or Fetch Metadata violates the local same-origin policy."
+          },
           "500": {
             "content": {
               "text/plain": {
@@ -2860,7 +3294,7 @@
                 }
               }
             },
-            "description": "Unhandled server failure (default plain text)."
+            "description": "Unhandled server failure (safe plain text; raw exceptions suppressed)."
           }
         },
         "summary": "Get Message Leaderboard",
@@ -2887,6 +3321,26 @@
             },
             "description": "Successful Response"
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Local Host rejected or invalid domain input."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Origin or Fetch Metadata violates the local same-origin policy."
+          },
           "500": {
             "content": {
               "text/plain": {
@@ -2895,7 +3349,7 @@
                 }
               }
             },
-            "description": "Unhandled server failure (default plain text)."
+            "description": "Unhandled server failure (safe plain text; raw exceptions suppressed)."
           }
         },
         "summary": "Get People",
@@ -2929,6 +3383,26 @@
             },
             "description": "Successful Response"
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Local Host rejected or invalid domain input."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Origin or Fetch Metadata violates the local same-origin policy."
+          },
           "404": {
             "content": {
               "application/json": {
@@ -2957,7 +3431,7 @@
                 }
               }
             },
-            "description": "Unhandled server failure (default plain text)."
+            "description": "Unhandled server failure (safe plain text; raw exceptions suppressed)."
           }
         },
         "summary": "Get Person",
@@ -2991,6 +3465,26 @@
             },
             "description": "Successful Response"
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Local Host rejected or invalid domain input."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Origin or Fetch Metadata violates the local same-origin policy."
+          },
           "404": {
             "content": {
               "application/json": {
@@ -3019,7 +3513,7 @@
                 }
               }
             },
-            "description": "Unhandled server failure (default plain text)."
+            "description": "Unhandled server failure (safe plain text; raw exceptions suppressed)."
           },
           "503": {
             "content": {
@@ -3039,7 +3533,7 @@
     },
     "/api/settings": {
       "get": {
-        "description": "String-valued settings mapping; current defaults are three lmstudio keys.",
+        "description": "String-valued settings mapping. Unsafe legacy LLM URL is returned as empty and blocked for inference without modifying stored data.",
         "operationId": "settings_get",
         "responses": {
           "200": {
@@ -3056,6 +3550,26 @@
             },
             "description": "Successful Response"
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Local Host rejected or invalid domain input."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Origin or Fetch Metadata violates the local same-origin policy."
+          },
           "500": {
             "content": {
               "text/plain": {
@@ -3064,7 +3578,7 @@
                 }
               }
             },
-            "description": "Unhandled server failure (default plain text)."
+            "description": "Unhandled server failure (safe plain text; raw exceptions suppressed)."
           }
         },
         "summary": "Settings Get",
@@ -3072,16 +3586,18 @@
         "x-implementation-status": "IMPLEMENTED"
       },
       "put": {
-        "description": "Only three lmstudio keys stored, all values stringified and unknown keys ignored; response is the settings mapping.",
+        "description": "Only three lmstudio keys stored; base URL validated and normalized to loopback before any write, invalid is 400. Other values stringified, unknown keys ignored.",
         "operationId": "settings_put",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
                 "additionalProperties": true,
-                "description": "Accepts any JSON object. Only lmstudio_base_url, lmstudio_model, lmstudio_temperature are saved after Python str(value) conversion. Unknown keys ignored. No URL/temperature validation at this boundary; no retry/provider selector fields.",
+                "description": "Accepts a JSON object. Only three lmstudio keys are saved; unknown keys ignored. Base URL must be a parsed HTTP(S) loopback string with no userinfo/query/fragment; remote/LAN rejected 400, localhost normalized to 127.0.0.1. Model/temperature retain string conversion and no temperature bounds. No remote opt-in or retry/provider selector.",
                 "properties": {
-                  "lmstudio_base_url": {},
+                  "lmstudio_base_url": {
+                    "type": "string"
+                  },
                   "lmstudio_model": {},
                   "lmstudio_temperature": {}
                 },
@@ -3107,6 +3623,26 @@
             },
             "description": "Successful Response"
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Local Host rejected, domain/import/collector input or operation failure (safe detail)."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Origin or Fetch Metadata violates the local same-origin policy."
+          },
           "422": {
             "content": {
               "application/json": {
@@ -3125,7 +3661,7 @@
                 }
               }
             },
-            "description": "Unhandled server failure (default plain text)."
+            "description": "Unhandled server failure (safe plain text; raw exceptions suppressed)."
           }
         },
         "summary": "Settings Put",
