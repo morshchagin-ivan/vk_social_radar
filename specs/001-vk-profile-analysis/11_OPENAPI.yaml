@@ -1,3 +1,7 @@
+# ARCHIVED TARGET PROPOSAL — NON-CANONICAL, NOT IMPLEMENTED
+# Retained for historical design context only; may not pass OpenAPI validation.
+# Canonical runtime artifact: ../../11_OPENAPI.yaml; guide: ../../12_API_GUIDE.md.
+# Do not synchronize this proposal or use it for client generation.
 # STATUS: TARGET CONTRACT
 # This file is not the current runtime contract. Runtime/API reconciliation: U04.
 

@@ -1,789 +1,3143 @@
-# STATUS: TARGET CONTRACT
-# This file is not the current runtime contract. Runtime/API reconciliation: U04.
-
-openapi: 3.1.0
-
-info:
-  title: VK Social Radar API
-  version: 1.0.0
-  summary: Local-first Social Intelligence Platform
-  description: |
-    REST API for VK Social Radar.
-
-    Features:
-
-      - Snapshot management
-      - VK Collector
-      - Timeline
-      - Relationship Intelligence
-      - Social Graph
-      - AI Reports
-      - AI Chat
-      - Search
-      - Export
-
-license:
-  name: MIT
-
-servers:
-
-  - url: http://localhost:8000/api/v1
-    description: Local Development
-
-  - url: https://localhost/api/v1
-    description: Local HTTPS
-
-tags:
-
-  - name: Health
-  - name: Settings
-  - name: Collector
-  - name: Snapshots
-  - name: Persons
-  - name: Dialogs
-  - name: Messages
-  - name: Communities
-  - name: Timeline
-  - name: Relationships
-  - name: Graph
-  - name: Analytics
-  - name: AI
-  - name: Search
-  - name: Export
-
-security:
-
-  - BearerAuth: []
-
-paths:
-
-  /health:
-
-    get:
-
-      tags:
-        - Health
-
-      summary: Health check
-
-      operationId: health
-
-      responses:
-
-        "200":
-
-          description: Service is healthy
-
-          content:
-
-            application/json:
-
-              schema:
-
-                $ref: '#/components/schemas/HealthResponse'
-
-  /settings:
-
-    get:
-
-      tags:
-        - Settings
-
-      summary: Get application settings
-
-      operationId: getSettings
-
-      responses:
-
-        "200":
-
-          description: Settings returned
-
-          content:
-
-            application/json:
-
-              schema:
-
-                $ref: '#/components/schemas/Settings'
-
-    put:
-
-      tags:
-        - Settings
-
-      summary: Update settings
-
-      operationId: updateSettings
-
-      requestBody:
-
-        required: true
-
-        content:
-
-          application/json:
-
-            schema:
-
-              $ref: '#/components/schemas/SettingsUpdate'
-
-      responses:
-
-        "200":
-
-          description: Updated
-
-          content:
-
-            application/json:
-
-              schema:
-
-                $ref: '#/components/schemas/Settings'
-
-  /collector/run:
-
-    post:
-
-      tags:
-
-        - Collector
-
-      summary: Start VK collector
-
-      operationId: runCollector
-
-      responses:
-
-        "202":
-
-          description: Collector started
-
-          content:
-
-            application/json:
-
-              schema:
-
-                $ref: '#/components/schemas/CollectorRun'
-
-  /collector/status:
-
-    get:
-
-      tags:
-
-        - Collector
-
-      summary: Collector status
-
-      operationId: collectorStatus
-
-      responses:
-
-        "200":
-
-          description: Current collector status
-
-          content:
-
-            application/json:
-
-              schema:
-
-                $ref: '#/components/schemas/CollectorStatus'
-
-  /snapshots:
-
-    get:
-
-      tags:
-
-        - Snapshots
-
-      summary: List snapshots
-
-      operationId: listSnapshots
-
-      parameters:
-
-        - $ref: '#/components/parameters/Page'
-
-        - $ref: '#/components/parameters/PageSize'
-
-        - $ref: '#/components/parameters/Sort'
-
-      responses:
-
-        "200":
-
-          description: Snapshot list
-
-          content:
-
-            application/json:
-
-              schema:
-
-                $ref: '#/components/schemas/SnapshotPage'
-
-  /snapshots/{snapshotId}:
-
-    get:
-
-      tags:
-
-        - Snapshots
-
-      summary: Snapshot details
-
-      operationId: getSnapshot
-
-      parameters:
-
-        - $ref: '#/components/parameters/SnapshotId'
-
-      responses:
-
-        "200":
-
-          description: Snapshot
-
-          content:
-
-            application/json:
-
-              schema:
-
-                $ref: '#/components/schemas/Snapshot'
-
-        "404":
-
-          $ref: '#/components/responses/NotFound'
-
-    delete:
-
-      tags:
-
-        - Snapshots
-
-      summary: Delete snapshot
-
-      operationId: deleteSnapshot
-
-      parameters:
-
-        - $ref: '#/components/parameters/SnapshotId'
-
-      responses:
-
-        "204":
-
-          description: Deleted
-
-  /persons:
-
-    get:
-
-      tags:
-
-        - Persons
-
-      summary: Search persons
-
-      operationId: listPersons
-
-      parameters:
-
-        - $ref: '#/components/parameters/Page'
-
-        - $ref: '#/components/parameters/PageSize'
-
-        - name: query
-
-          in: query
-
-          schema:
-
-            type: string
-
-        - name: city
-
-          in: query
-
-          schema:
-
-            type: string
-
-      responses:
-
-        "200":
-
-          description: Person list
-
-          content:
-
-            application/json:
-
-              schema:
-
-                $ref: '#/components/schemas/PersonPage'
-
-  /persons/{personId}:
-
-    get:
-
-      tags:
-
-        - Persons
-
-      summary: Person profile
-
-      operationId: getPerson
-
-      parameters:
-
-        - $ref: '#/components/parameters/PersonId'
-
-      responses:
-
-        "200":
-
-          description: Person
-
-          content:
-
-            application/json:
-
-              schema:
-
-                $ref: '#/components/schemas/Person'
-
-  /timeline:
-
-    get:
-
-      tags:
-
-        - Timeline
-
-      summary: Timeline events
-
-      operationId: timeline
-
-      parameters:
-
-        - name: personId
-
-          in: query
-
-          schema:
-
-            type: string
-            format: uuid
-
-        - name: eventType
-
-          in: query
-
-          schema:
-
-            type: string
-
-        - name: from
-
-          in: query
-
-          schema:
-
-            type: string
-            format: date-time
-
-        - name: to
-
-          in: query
-
-          schema:
-
-            type: string
-            format: date-time
-
-      responses:
-
-        "200":
-
-          description: Timeline
-
-          content:
-
-            application/json:
-
-              schema:
-
-                $ref: '#/components/schemas/TimelinePage'
-
-  /relationships:
-
-    get:
-
-      tags:
-
-        - Relationships
-
-      summary: Relationship analysis
-
-      operationId: relationships
-
-      parameters:
-
-        - name: minScore
-
-          in: query
-
-          schema:
-
-            type: number
-
-      responses:
-
-        "200":
-
-          description: Relationship list
-
-          content:
-
-            application/json:
-
-              schema:
-
-                $ref: '#/components/schemas/RelationshipPage'
-
-  /graph:
-
-    get:
-
-      tags:
-
-        - Graph
-
-      summary: Social graph
-
-      operationId: graph
-
-      responses:
-
-        "200":
-
-          description: Graph
-
-          content:
-
-            application/json:
-
-              schema:
-
-                $ref: '#/components/schemas/SocialGraph'
-
-  /ai/report/{snapshotId}:
-
-    post:
-
-      tags:
-
-        - AI
-
-      summary: Generate AI report
-
-      operationId: aiReport
-
-      parameters:
-
-        - $ref: '#/components/parameters/SnapshotId'
-
-      responses:
-
-        "200":
-
-          description: Generated
-
-          content:
-
-            application/json:
-
-              schema:
-
-                $ref: '#/components/schemas/AIReport'
-
-  /ai/chat:
-
-    post:
-
-      tags:
-
-        - AI
-
-      summary: Chat with AI
-
-      operationId: aiChat
-
-      requestBody:
-
-        required: true
-
-        content:
-
-          application/json:
-
-            schema:
-
-              $ref: '#/components/schemas/ChatRequest'
-
-      responses:
-
-        "200":
-
-          description: AI answer
-
-          content:
-
-            application/json:
-
-              schema:
-
-                $ref: '#/components/schemas/ChatResponse'
-
-  /search:
-
-    get:
-
-      tags:
-
-        - Search
-
-      summary: Global search
-
-      operationId: search
-
-      parameters:
-
-        - name: query
-
-          in: query
-
-          required: true
-
-          schema:
-
-            type: string
-
-      responses:
-
-        "200":
-
-          description: Search result
-
-          content:
-
-            application/json:
-
-              schema:
-
-                $ref: '#/components/schemas/SearchResponse'
-
-  /export/json:
-
-    get:
-
-      tags:
-
-        - Export
-
-      summary: Export JSON
-
-      responses:
-
-        "200":
-
-          description: Export created
-
-  /export/csv:
-
-    get:
-
-      tags:
-
-        - Export
-
-      summary: Export CSV
-
-      responses:
-
-        "200":
-
-          description: Export created
-
-components:
-
-  securitySchemes:
-
-    BearerAuth:
-
-      type: http
-
-      scheme: bearer
-
-      bearerFormat: JWT
-
-  parameters:
-
-    SnapshotId:
-
-      name: snapshotId
-
-      in: path
-
-      required: true
-
-      schema:
-
-        type: string
-        format: uuid
-
-    PersonId:
-
-      name: personId
-
-      in: path
-
-      required: true
-
-      schema:
-
-        type: string
-        format: uuid
-
-    Page:
-
-      name: page
-
-      in: query
-
-      schema:
-
-        type: integer
-        default: 1
-        minimum: 1
-
-    PageSize:
-
-      name: size
-
-      in: query
-
-      schema:
-
-        type: integer
-        default: 50
-        maximum: 500
-
-    Sort:
-
-      name: sort
-
-      in: query
-
-      schema:
-
-        type: string
-
-  responses:
-
-    NotFound:
-
-      description: Resource not found
-
-      content:
-
-        application/json:
-
-          schema:
-
-            $ref: '#/components/schemas/ErrorResponse'
-
-    BadRequest:
-
-      description: Invalid request
-
-      content:
-
-        application/json:
-
-          schema:
-
-            $ref: '#/components/schemas/ErrorResponse'
-
-    Unauthorized:
-
-      description: Unauthorized
-
-      content:
-
-        application/json:
-
-          schema:
-
-            $ref: '#/components/schemas/ErrorResponse'
-
-  schemas:
-
-    ErrorResponse:
-      type: object
-
-    HealthResponse:
-      type: object
-
-    Settings:
-      type: object
-
-    SettingsUpdate:
-      type: object
-
-    CollectorRun:
-      type: object
-
-    CollectorStatus:
-      type: object
-
-    Snapshot:
-      type: object
-
-    SnapshotPage:
-      type: object
-
-    Person:
-      type: object
-
-    PersonPage:
-      type: object
-
-    TimelinePage:
-      type: object
-
-    RelationshipPage:
-      type: object
-
-    SocialGraph:
-      type: object
-
-    AIReport:
-      type: object
-
-    ChatRequest:
-      type: object
-
-    ChatResponse:
-      type: object
-
-    SearchResponse:
-      type: object
+{
+  "components": {
+    "schemas": {
+      "APIError": {
+        "additionalProperties": true,
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "title": "APIError",
+        "type": "object"
+      },
+      "Body_post_import_file": {
+        "properties": {
+          "file": {
+            "format": "binary",
+            "title": "File",
+            "type": "string"
+          },
+          "import_type": {
+            "title": "Import Type",
+            "type": "string"
+          },
+          "relation_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relation Type"
+          },
+          "snapshot_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snapshot Date"
+          }
+        },
+        "required": [
+          "file",
+          "import_type"
+        ],
+        "title": "Body_post_import_file",
+        "type": "object"
+      },
+      "Change": {
+        "additionalProperties": true,
+        "properties": {
+          "details": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details"
+          },
+          "event_date": {
+            "title": "Event Date",
+            "type": "string"
+          },
+          "event_type": {
+            "title": "Event Type",
+            "type": "string"
+          },
+          "from_snapshot_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Snapshot Id"
+          },
+          "full_name": {
+            "title": "Full Name",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "person_id": {
+            "title": "Person Id",
+            "type": "integer"
+          },
+          "profile_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile Url"
+          },
+          "provenance": {
+            "enum": [
+              "snapshot",
+              "legacy_unknown"
+            ],
+            "title": "Provenance",
+            "type": "string"
+          },
+          "to_snapshot_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Snapshot Id"
+          }
+        },
+        "required": [
+          "id",
+          "person_id",
+          "event_type",
+          "event_date",
+          "details",
+          "full_name",
+          "profile_url",
+          "from_snapshot_id",
+          "to_snapshot_id",
+          "provenance"
+        ],
+        "title": "Change",
+        "type": "object"
+      },
+      "CollectorBusy": {
+        "additionalProperties": true,
+        "properties": {
+          "current_operation": {
+            "$ref": "#/components/schemas/CollectorOperation"
+          },
+          "operation_id": {
+            "title": "Operation Id",
+            "type": "string"
+          },
+          "state": {
+            "const": "COLLECTOR_BUSY",
+            "title": "State",
+            "type": "string"
+          },
+          "status": {
+            "const": "COLLECTOR_BUSY",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "state",
+          "operation_id",
+          "current_operation"
+        ],
+        "title": "CollectorBusy",
+        "type": "object"
+      },
+      "CollectorJobResult": {
+        "additionalProperties": true,
+        "properties": {
+          "operation": {
+            "$ref": "#/components/schemas/CollectorOperation"
+          },
+          "result": {
+            "additionalProperties": true,
+            "title": "Result",
+            "type": "object"
+          },
+          "result_available": {
+            "title": "Result Available",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "operation",
+          "result_available"
+        ],
+        "title": "CollectorJobResult",
+        "type": "object"
+      },
+      "CollectorOperation": {
+        "additionalProperties": true,
+        "description": "Stable job envelope; progress counters and diagnostic fields remain extensible.",
+        "properties": {
+          "operation_id": {
+            "title": "Operation Id",
+            "type": "string"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "operation_id",
+          "state"
+        ],
+        "title": "CollectorOperation",
+        "type": "object"
+      },
+      "CollectorStatus": {
+        "additionalProperties": true,
+        "properties": {
+          "authenticated": {
+            "title": "Authenticated",
+            "type": "boolean"
+          },
+          "blocked_hosts": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Blocked Hosts",
+            "type": "array"
+          },
+          "collection_surface": {
+            "title": "Collection Surface",
+            "type": "string"
+          },
+          "current_url": {
+            "title": "Current Url",
+            "type": "string"
+          },
+          "has_preview": {
+            "title": "Has Preview",
+            "type": "boolean"
+          },
+          "last_action": {
+            "title": "Last Action",
+            "type": "string"
+          },
+          "last_error": {
+            "title": "Last Error",
+            "type": "string"
+          },
+          "members_deduped": {
+            "title": "Members Deduped",
+            "type": "integer"
+          },
+          "members_discovered": {
+            "title": "Members Discovered",
+            "type": "integer"
+          },
+          "operation_id": {
+            "title": "Operation Id",
+            "type": "string"
+          },
+          "operation_state": {
+            "title": "Operation State",
+            "type": "string"
+          },
+          "profile_dir": {
+            "title": "Profile Dir",
+            "type": "string"
+          },
+          "progress": {
+            "additionalProperties": true,
+            "title": "Progress",
+            "type": "object"
+          },
+          "result_available": {
+            "title": "Result Available",
+            "type": "boolean"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "authenticated",
+          "current_url",
+          "last_error",
+          "last_action",
+          "has_preview",
+          "blocked_hosts",
+          "profile_dir",
+          "operation_id",
+          "operation_state",
+          "collection_surface",
+          "members_discovered",
+          "members_deduped",
+          "progress",
+          "result_available"
+        ],
+        "title": "CollectorStatus",
+        "type": "object"
+      },
+      "CountFileResult": {
+        "additionalProperties": true,
+        "properties": {
+          "imported": {
+            "title": "Imported",
+            "type": "integer"
+          },
+          "job_id": {
+            "title": "Job Id",
+            "type": "integer"
+          },
+          "processed_files": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Processed Files",
+            "type": "array"
+          },
+          "stored_as": {
+            "title": "Stored As",
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id",
+          "stored_as",
+          "imported"
+        ],
+        "title": "CountFileResult",
+        "type": "object"
+      },
+      "Dashboard": {
+        "additionalProperties": true,
+        "properties": {
+          "changes": {
+            "items": {
+              "$ref": "#/components/schemas/Change"
+            },
+            "title": "Changes",
+            "type": "array"
+          },
+          "followers": {
+            "$ref": "#/components/schemas/RelationCounts"
+          },
+          "friends": {
+            "$ref": "#/components/schemas/RelationCounts"
+          },
+          "message_total": {
+            "title": "Message Total",
+            "type": "integer"
+          },
+          "recent_imports": {
+            "items": {
+              "$ref": "#/components/schemas/ImportJob"
+            },
+            "title": "Recent Imports",
+            "type": "array"
+          },
+          "top_people": {
+            "items": {
+              "$ref": "#/components/schemas/TopPerson"
+            },
+            "title": "Top People",
+            "type": "array"
+          }
+        },
+        "required": [
+          "friends",
+          "followers",
+          "message_total",
+          "changes",
+          "top_people",
+          "recent_imports"
+        ],
+        "title": "Dashboard",
+        "type": "object"
+      },
+      "Dialog": {
+        "additionalProperties": true,
+        "properties": {
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Url"
+          },
+          "collected_at": {
+            "title": "Collected At",
+            "type": "string"
+          },
+          "date_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date Label"
+          },
+          "dialog_key": {
+            "title": "Dialog Key",
+            "type": "string"
+          },
+          "dialog_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dialog Url"
+          },
+          "full_name": {
+            "title": "Full Name",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "outgoing": {
+            "title": "Outgoing",
+            "type": "integer"
+          },
+          "peer_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Peer Id"
+          },
+          "preview": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preview"
+          },
+          "unread": {
+            "title": "Unread",
+            "type": "integer"
+          },
+          "unread_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unread Count"
+          },
+          "verified": {
+            "title": "Verified",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "dialog_key",
+          "peer_id",
+          "full_name",
+          "dialog_url",
+          "preview",
+          "date_label",
+          "unread",
+          "unread_count",
+          "outgoing",
+          "avatar_url",
+          "verified",
+          "collected_at"
+        ],
+        "title": "Dialog",
+        "type": "object"
+      },
+      "DialogSave": {
+        "additionalProperties": true,
+        "properties": {
+          "collected_at": {
+            "title": "Collected At",
+            "type": "string"
+          },
+          "kind": {
+            "const": "dialogs",
+            "title": "Kind",
+            "type": "string"
+          },
+          "saved": {
+            "title": "Saved",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "kind",
+          "saved",
+          "collected_at"
+        ],
+        "title": "DialogSave",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "Health": {
+        "additionalProperties": true,
+        "properties": {
+          "status": {
+            "const": "ok",
+            "title": "Status",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "version"
+        ],
+        "title": "Health",
+        "type": "object"
+      },
+      "ImportJob": {
+        "additionalProperties": true,
+        "properties": {
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "error_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Text"
+          },
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "import_type": {
+            "title": "Import Type",
+            "type": "string"
+          },
+          "imported_rows": {
+            "title": "Imported Rows",
+            "type": "integer"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "filename",
+          "import_type",
+          "status",
+          "imported_rows",
+          "error_text",
+          "created_at"
+        ],
+        "title": "ImportJob",
+        "type": "object"
+      },
+      "Insight": {
+        "additionalProperties": true,
+        "properties": {
+          "cautions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Cautions",
+            "type": "array"
+          },
+          "confidence": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "type": "number"
+          },
+          "evidence": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "strengthening",
+              "stable",
+              "weakening",
+              "insufficient_data"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "model",
+          "status",
+          "confidence",
+          "summary",
+          "evidence",
+          "cautions"
+        ],
+        "title": "Insight",
+        "type": "object"
+      },
+      "LeaderboardItem": {
+        "additionalProperties": true,
+        "properties": {
+          "active_days": {
+            "title": "Active Days",
+            "type": "integer"
+          },
+          "full_name": {
+            "title": "Full Name",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "incoming_count": {
+            "title": "Incoming Count",
+            "type": "integer"
+          },
+          "initiated_by_me": {
+            "title": "Initiated By Me",
+            "type": "integer"
+          },
+          "initiated_by_person": {
+            "title": "Initiated By Person",
+            "type": "integer"
+          },
+          "median_reply_minutes": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Reply Minutes"
+          },
+          "outgoing_count": {
+            "title": "Outgoing Count",
+            "type": "integer"
+          },
+          "period_end": {
+            "title": "Period End",
+            "type": "string"
+          },
+          "period_start": {
+            "title": "Period Start",
+            "type": "string"
+          },
+          "person_id": {
+            "title": "Person Id",
+            "type": "integer"
+          },
+          "person_initiative_pct": {
+            "title": "Person Initiative Pct",
+            "type": "number"
+          },
+          "profile_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile Url"
+          },
+          "total_messages": {
+            "title": "Total Messages",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "person_id",
+          "period_start",
+          "period_end",
+          "incoming_count",
+          "outgoing_count",
+          "active_days",
+          "initiated_by_person",
+          "initiated_by_me",
+          "median_reply_minutes",
+          "full_name",
+          "profile_url",
+          "total_messages",
+          "person_initiative_pct"
+        ],
+        "title": "LeaderboardItem",
+        "type": "object"
+      },
+      "MessageStats": {
+        "additionalProperties": true,
+        "properties": {
+          "active_days": {
+            "title": "Active Days",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "incoming_count": {
+            "title": "Incoming Count",
+            "type": "integer"
+          },
+          "initiated_by_me": {
+            "title": "Initiated By Me",
+            "type": "integer"
+          },
+          "initiated_by_person": {
+            "title": "Initiated By Person",
+            "type": "integer"
+          },
+          "median_reply_minutes": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Reply Minutes"
+          },
+          "outgoing_count": {
+            "title": "Outgoing Count",
+            "type": "integer"
+          },
+          "period_end": {
+            "title": "Period End",
+            "type": "string"
+          },
+          "period_start": {
+            "title": "Period Start",
+            "type": "string"
+          },
+          "person_id": {
+            "title": "Person Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "person_id",
+          "period_start",
+          "period_end",
+          "incoming_count",
+          "outgoing_count",
+          "active_days",
+          "initiated_by_person",
+          "initiated_by_me",
+          "median_reply_minutes"
+        ],
+        "title": "MessageStats",
+        "type": "object"
+      },
+      "ModelInfo": {
+        "additionalProperties": true,
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "ModelInfo",
+        "type": "object"
+      },
+      "ModelTest": {
+        "additionalProperties": true,
+        "properties": {
+          "models": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Models",
+            "type": "array"
+          },
+          "models_count": {
+            "title": "Models Count",
+            "type": "integer"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok",
+          "models_count",
+          "models"
+        ],
+        "title": "ModelTest",
+        "type": "object"
+      },
+      "OrganizationResult": {
+        "additionalProperties": true,
+        "properties": {
+          "diagnostics": {
+            "additionalProperties": true,
+            "title": "Diagnostics",
+            "type": "object"
+          },
+          "profiles": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Profiles",
+            "type": "array"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "source_url": {
+            "title": "Source Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "source_url",
+          "profiles",
+          "diagnostics"
+        ],
+        "title": "OrganizationResult",
+        "type": "object"
+      },
+      "PersonDetail": {
+        "additionalProperties": true,
+        "properties": {
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/Change"
+            },
+            "title": "Events",
+            "type": "array"
+          },
+          "insights": {
+            "items": {
+              "$ref": "#/components/schemas/StoredInsight"
+            },
+            "title": "Insights",
+            "type": "array"
+          },
+          "message_stats": {
+            "items": {
+              "$ref": "#/components/schemas/MessageStats"
+            },
+            "title": "Message Stats",
+            "type": "array"
+          },
+          "person": {
+            "$ref": "#/components/schemas/StoredPerson"
+          }
+        },
+        "required": [
+          "person",
+          "message_stats",
+          "events",
+          "insights"
+        ],
+        "title": "PersonDetail",
+        "type": "object"
+      },
+      "PersonListItem": {
+        "additionalProperties": true,
+        "properties": {
+          "active_days": {
+            "title": "Active Days",
+            "type": "integer"
+          },
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Url"
+          },
+          "full_name": {
+            "title": "Full Name",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "incoming_count": {
+            "title": "Incoming Count",
+            "type": "integer"
+          },
+          "is_deactivated": {
+            "title": "Is Deactivated",
+            "type": "integer"
+          },
+          "is_follower": {
+            "title": "Is Follower",
+            "type": "boolean"
+          },
+          "is_friend": {
+            "title": "Is Friend",
+            "type": "boolean"
+          },
+          "median_reply_minutes": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Reply Minutes"
+          },
+          "outgoing_count": {
+            "title": "Outgoing Count",
+            "type": "integer"
+          },
+          "profile_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile Url"
+          },
+          "total_messages": {
+            "title": "Total Messages",
+            "type": "integer"
+          },
+          "vk_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vk Id"
+          }
+        },
+        "required": [
+          "id",
+          "vk_id",
+          "full_name",
+          "profile_url",
+          "avatar_url",
+          "is_deactivated",
+          "incoming_count",
+          "outgoing_count",
+          "active_days",
+          "median_reply_minutes",
+          "is_friend",
+          "is_follower",
+          "total_messages"
+        ],
+        "title": "PersonListItem",
+        "type": "object"
+      },
+      "Preview": {
+        "additionalProperties": true,
+        "properties": {
+          "collected_at": {
+            "title": "Collected At",
+            "type": "string"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "report": {
+            "additionalProperties": true,
+            "title": "Report",
+            "type": "object"
+          }
+        },
+        "required": [
+          "kind",
+          "collected_at",
+          "count",
+          "items",
+          "report"
+        ],
+        "title": "Preview",
+        "type": "object"
+      },
+      "ProfileDeleted": {
+        "additionalProperties": true,
+        "properties": {
+          "deleted": {
+            "title": "Deleted",
+            "type": "string"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok",
+          "deleted"
+        ],
+        "title": "ProfileDeleted",
+        "type": "object"
+      },
+      "RelationCounts": {
+        "additionalProperties": true,
+        "properties": {
+          "added": {
+            "title": "Added",
+            "type": "integer"
+          },
+          "current": {
+            "title": "Current",
+            "type": "integer"
+          },
+          "removed": {
+            "title": "Removed",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "current",
+          "added",
+          "removed"
+        ],
+        "title": "RelationCounts",
+        "type": "object"
+      },
+      "SnapshotFileResult": {
+        "additionalProperties": true,
+        "properties": {
+          "added": {
+            "title": "Added",
+            "type": "integer"
+          },
+          "captured_at": {
+            "title": "Captured At",
+            "type": "string"
+          },
+          "completeness": {
+            "enum": [
+              "DECLARED_COMPLETE",
+              "UNKNOWN",
+              "PARTIAL"
+            ],
+            "title": "Completeness",
+            "type": "string"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "job_id": {
+            "title": "Job Id",
+            "type": "integer"
+          },
+          "relation_type": {
+            "enum": [
+              "friend",
+              "follower"
+            ],
+            "title": "Relation Type",
+            "type": "string"
+          },
+          "removed": {
+            "title": "Removed",
+            "type": "integer"
+          },
+          "snapshot_date": {
+            "title": "Snapshot Date",
+            "type": "string"
+          },
+          "snapshot_id": {
+            "title": "Snapshot Id",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "CREATING",
+              "COMPLETE",
+              "INCOMPLETE",
+              "FAILED"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "stored_as": {
+            "title": "Stored As",
+            "type": "string"
+          }
+        },
+        "required": [
+          "snapshot_id",
+          "snapshot_date",
+          "captured_at",
+          "relation_type",
+          "status",
+          "completeness",
+          "count",
+          "added",
+          "removed",
+          "job_id",
+          "stored_as"
+        ],
+        "title": "SnapshotFileResult",
+        "type": "object"
+      },
+      "SnapshotResult": {
+        "additionalProperties": true,
+        "properties": {
+          "added": {
+            "title": "Added",
+            "type": "integer"
+          },
+          "captured_at": {
+            "title": "Captured At",
+            "type": "string"
+          },
+          "completeness": {
+            "enum": [
+              "DECLARED_COMPLETE",
+              "UNKNOWN",
+              "PARTIAL"
+            ],
+            "title": "Completeness",
+            "type": "string"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "relation_type": {
+            "enum": [
+              "friend",
+              "follower"
+            ],
+            "title": "Relation Type",
+            "type": "string"
+          },
+          "removed": {
+            "title": "Removed",
+            "type": "integer"
+          },
+          "snapshot_date": {
+            "title": "Snapshot Date",
+            "type": "string"
+          },
+          "snapshot_id": {
+            "title": "Snapshot Id",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "CREATING",
+              "COMPLETE",
+              "INCOMPLETE",
+              "FAILED"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "snapshot_id",
+          "snapshot_date",
+          "captured_at",
+          "relation_type",
+          "status",
+          "completeness",
+          "count",
+          "added",
+          "removed"
+        ],
+        "title": "SnapshotResult",
+        "type": "object"
+      },
+      "SourceClassification": {
+        "additionalProperties": true,
+        "properties": {
+          "eligible_for_collection": {
+            "title": "Eligible For Collection",
+            "type": "boolean"
+          },
+          "normalized_url": {
+            "title": "Normalized Url",
+            "type": "string"
+          },
+          "source_type": {
+            "title": "Source Type",
+            "type": "string"
+          },
+          "source_url": {
+            "title": "Source Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_type",
+          "source_url",
+          "normalized_url",
+          "eligible_for_collection"
+        ],
+        "title": "SourceClassification",
+        "type": "object"
+      },
+      "StoredInsight": {
+        "additionalProperties": true,
+        "properties": {
+          "cautions_json": {
+            "title": "Cautions Json",
+            "type": "string"
+          },
+          "confidence": {
+            "title": "Confidence",
+            "type": "number"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "evidence_json": {
+            "title": "Evidence Json",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "model",
+          "status",
+          "confidence",
+          "summary",
+          "evidence_json",
+          "cautions_json"
+        ],
+        "title": "StoredInsight",
+        "type": "object"
+      },
+      "StoredPerson": {
+        "additionalProperties": true,
+        "properties": {
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Url"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "full_name": {
+            "title": "Full Name",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "is_deactivated": {
+            "title": "Is Deactivated",
+            "type": "integer"
+          },
+          "profile_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile Url"
+          },
+          "snapshot_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snapshot Key"
+          },
+          "vk_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vk Id"
+          }
+        },
+        "required": [
+          "id",
+          "vk_id",
+          "full_name",
+          "profile_url",
+          "avatar_url",
+          "is_deactivated",
+          "created_at",
+          "snapshot_key"
+        ],
+        "title": "StoredPerson",
+        "type": "object"
+      },
+      "TopPerson": {
+        "additionalProperties": true,
+        "properties": {
+          "active_days": {
+            "title": "Active Days",
+            "type": "integer"
+          },
+          "full_name": {
+            "title": "Full Name",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "incoming_count": {
+            "title": "Incoming Count",
+            "type": "integer"
+          },
+          "median_reply_minutes": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Reply Minutes"
+          },
+          "outgoing_count": {
+            "title": "Outgoing Count",
+            "type": "integer"
+          },
+          "profile_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile Url"
+          },
+          "total_messages": {
+            "title": "Total Messages",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "full_name",
+          "profile_url",
+          "incoming_count",
+          "outgoing_count",
+          "active_days",
+          "median_reply_minutes",
+          "total_messages"
+        ],
+        "title": "TopPerson",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "description": "IMPLEMENTED local single-user API. No authentication is enforced. Loopback is the default deployment boundary, not an access-control guarantee. U06 privacy/access policy remains planned. Canonical 11_OPENAPI.yaml is generated from this app; /api is preserved. No /api/v1 aliases or target-only resources.",
+    "title": "VK Social Radar runtime API",
+    "version": "0.4.2"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/": {
+      "get": {
+        "description": "Internal HTML application shell. Static assets and framework docs are infrastructure, outside application operation inventory.",
+        "operationId": "index",
+        "responses": {
+          "200": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "HTML application shell"
+          },
+          "500": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Unhandled server failure (default plain text)."
+          }
+        },
+        "summary": "Index",
+        "x-audience": "internal",
+        "x-implementation-status": "IMPLEMENTED"
+      }
+    },
+    "/api/changes": {
+      "get": {
+        "description": "Membership timeline only; new events include immutable snapshot pair provenance, legacy events labelled legacy_unknown. Limit clamps to 1..500; no rejected range.",
+        "operationId": "get_changes",
+        "parameters": [
+          {
+            "description": "Clamped to 1..500; out-of-range integers are accepted",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "description": "Clamped to 1..500; out-of-range integers are accepted",
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Change"
+                  },
+                  "title": "Response Get Changes",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Unhandled server failure (default plain text)."
+          }
+        },
+        "summary": "Get Changes",
+        "x-audience": "public",
+        "x-implementation-status": "IMPLEMENTED"
+      }
+    },
+    "/api/collector/check-auth": {
+      "post": {
+        "description": "Checks VK login inside the separate browser; this is not API authentication.",
+        "operationId": "collector_check_auth",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectorStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Domain/import/collector input or operation failure."
+          },
+          "500": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Unhandled server failure (default plain text)."
+          }
+        },
+        "summary": "Collector Check Auth",
+        "x-audience": "public",
+        "x-implementation-status": "IMPLEMENTED"
+      }
+    },
+    "/api/collector/close": {
+      "post": {
+        "description": "Closes the collector browser and returns status.",
+        "operationId": "collector_close",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectorStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "500": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Unhandled server failure (default plain text)."
+          }
+        },
+        "summary": "Collector Close",
+        "x-audience": "public",
+        "x-implementation-status": "IMPLEMENTED"
+      }
+    },
+    "/api/collector/collect/{kind}": {
+      "post": {
+        "description": "Supported kind friends/followers/dialogs; invalid kind, busy, stopped, unauthenticated or zero valid items maps 400. Nonempty observation is a preview, not a complete snapshot. No automatic save.",
+        "operationId": "collector_collect",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "title": "Kind",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preview"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Domain/import/collector input or operation failure."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Unhandled server failure (default plain text)."
+          }
+        },
+        "summary": "Collector Collect",
+        "x-audience": "public",
+        "x-implementation-status": "IMPLEMENTED"
+      }
+    },
+    "/api/collector/navigate/{target}": {
+      "post": {
+        "description": "Supported target values home/friends/followers/dialogs; invalid target or collector failure is 400, not framework enum validation.",
+        "operationId": "collector_navigate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "target",
+            "required": true,
+            "schema": {
+              "title": "Target",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectorStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Domain/import/collector input or operation failure."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Unhandled server failure (default plain text)."
+          }
+        },
+        "summary": "Collector Navigate",
+        "x-audience": "public",
+        "x-implementation-status": "IMPLEMENTED"
+      }
+    },
+    "/api/collector/organization-source": {
+      "post": {
+        "description": "Synchronous public organization preview with extensible report/diagnostics; result may describe partial/failure in a 200 body. Generic save-preview does not support organization previews.",
+        "operationId": "collector_organization_source",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "description": "source_url is string-coerced and stripped; absent/falsy/blank is 400. options is passed through only if an object; otherwise treated as {}. Collector restrictions are business errors, not framework enums.",
+                "properties": {
+                  "options": {
+                    "description": "Only objects are used. Synchronous collection int-coerces and clamps: max_member_index or max_profiles (default 7000, 1..20000), max_pages or max_scrolls (800, 1..2000), max_candidate_profile_enrichment (30, 0..200), max_ambiguous_profile_enrichment (10, 0..100), timeout_ms (30000, 5000..60000). Falsy values select defaults; malformed values yield 400 synchronously or job failure asynchronously. Unknown keys ignored. These are coercion rules, not framework request bounds."
+                  },
+                  "source_url": {}
+                },
+                "required": [
+                  "source_url"
+                ],
+                "title": "Payload",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Domain/import/collector input or operation failure."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Unhandled server failure (default plain text)."
+          }
+        },
+        "summary": "Collector Organization Source",
+        "x-audience": "public",
+        "x-implementation-status": "IMPLEMENTED"
+      }
+    },
+    "/api/collector/organization-source/jobs": {
+      "post": {
+        "description": "Starts an in-memory job. Both queued and COLLECTOR_BUSY return 200; no 202/409. Jobs are not durable.",
+        "operationId": "collector_organization_source_job_create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "description": "source_url is string-coerced and stripped; absent/falsy/blank is 400. options is passed through only if an object; otherwise treated as {}. Collector restrictions are business errors, not framework enums.",
+                "properties": {
+                  "options": {
+                    "description": "Only objects are used. Synchronous collection int-coerces and clamps: max_member_index or max_profiles (default 7000, 1..20000), max_pages or max_scrolls (800, 1..2000), max_candidate_profile_enrichment (30, 0..200), max_ambiguous_profile_enrichment (10, 0..100), timeout_ms (30000, 5000..60000). Falsy values select defaults; malformed values yield 400 synchronously or job failure asynchronously. Unknown keys ignored. These are coercion rules, not framework request bounds."
+                  },
+                  "source_url": {}
+                },
+                "required": [
+                  "source_url"
+                ],
+                "title": "Payload",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/CollectorOperation"
+                    },
+                    {
+                      "$ref": "#/components/schemas/CollectorBusy"
+                    }
+                  ],
+                  "title": "Response Collector Organization Source Job Create"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Domain/import/collector input or operation failure."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Unhandled server failure (default plain text)."
+          }
+        },
+        "summary": "Collector Organization Source Job Create",
+        "x-audience": "public",
+        "x-implementation-status": "IMPLEMENTED"
+      }
+    },
+    "/api/collector/organization-source/jobs/{operation_id}": {
+      "get": {
+        "description": "In-memory operation projection; unknown ID 404.",
+        "operationId": "collector_organization_source_job_status",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "operation_id",
+            "required": true,
+            "schema": {
+              "title": "Operation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectorOperation"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Person, preview or collector operation not found."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Unhandled server failure (default plain text)."
+          }
+        },
+        "summary": "Collector Organization Source Job Status",
+        "x-audience": "public",
+        "x-implementation-status": "IMPLEMENTED"
+      }
+    },
+    "/api/collector/organization-source/jobs/{operation_id}/cancel": {
+      "post": {
+        "description": "Requests cancellation and returns operation projection; unknown ID 404.",
+        "operationId": "collector_organization_source_job_cancel",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "operation_id",
+            "required": true,
+            "schema": {
+              "title": "Operation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectorOperation"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Person, preview or collector operation not found."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Unhandled server failure (default plain text)."
+          }
+        },
+        "summary": "Collector Organization Source Job Cancel",
+        "x-audience": "public",
+        "x-implementation-status": "IMPLEMENTED"
+      }
+    },
+    "/api/collector/organization-source/jobs/{operation_id}/result": {
+      "get": {
+        "description": "Returns operation/result_available and optional result. Pending remains 200; unknown ID 404.",
+        "operationId": "collector_organization_source_job_result",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "operation_id",
+            "required": true,
+            "schema": {
+              "title": "Operation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectorJobResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Person, preview or collector operation not found."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Unhandled server failure (default plain text)."
+          }
+        },
+        "summary": "Collector Organization Source Job Result",
+        "x-audience": "public",
+        "x-implementation-status": "IMPLEMENTED"
+      }
+    },
+    "/api/collector/preview": {
+      "get": {
+        "description": "Last in-memory relation/dialog/organization preview; missing preview 404. Items/report retain collector-specific diagnostic fields.",
+        "operationId": "collector_preview",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/Preview"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OrganizationResult"
+                    }
+                  ],
+                  "title": "Response Collector Preview"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Person, preview or collector operation not found."
+          },
+          "500": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Unhandled server failure (default plain text)."
+          }
+        },
+        "summary": "Collector Preview",
+        "x-audience": "public",
+        "x-implementation-status": "IMPLEMENTED"
+      }
+    },
+    "/api/collector/profile": {
+      "delete": {
+        "description": "Closes browser and deletes its separate local profile. Returns deleted path. No API authentication is implemented.",
+        "operationId": "collector_delete_profile",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileDeleted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "500": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Unhandled server failure (default plain text)."
+          }
+        },
+        "summary": "Collector Delete Profile",
+        "x-audience": "public",
+        "x-implementation-status": "IMPLEMENTED"
+      }
+    },
+    "/api/collector/save-preview": {
+      "post": {
+        "description": "Explicit save: friends/followers are UNKNOWN/INCOMPLETE with no current replacement; dialogs return saved count. Same preview identity is replayed. Missing preview 404, unsupported organization preview or save failure 400.",
+        "operationId": "collector_save_preview",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/SnapshotResult"
+                    },
+                    {
+                      "$ref": "#/components/schemas/DialogSave"
+                    }
+                  ],
+                  "title": "Response Collector Save Preview"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Domain/import/collector input or operation failure."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Person, preview or collector operation not found."
+          },
+          "500": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Unhandled server failure (default plain text)."
+          }
+        },
+        "summary": "Collector Save Preview",
+        "x-audience": "public",
+        "x-implementation-status": "IMPLEMENTED"
+      }
+    },
+    "/api/collector/source/classify": {
+      "get": {
+        "description": "Pure source URL classification; unsupported/blank URL returns an UNKNOWN classification, not 400.",
+        "operationId": "collector_source_classify",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "source_url",
+            "required": true,
+            "schema": {
+              "title": "Source Url",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceClassification"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Unhandled server failure (default plain text)."
+          }
+        },
+        "summary": "Collector Source Classify",
+        "x-audience": "public",
+        "x-implementation-status": "IMPLEMENTED"
+      }
+    },
+    "/api/collector/start": {
+      "post": {
+        "description": "Starts separate persistent Chromium and returns status. Explicit startup failures use JSON 500.",
+        "operationId": "collector_start",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectorStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Chromium startup failure (JSON); unhandled failures remain plain text."
+          }
+        },
+        "summary": "Collector Start",
+        "x-audience": "public",
+        "x-implementation-status": "IMPLEMENTED"
+      }
+    },
+    "/api/collector/status": {
+      "get": {
+        "description": "Collector state with extensible diagnostic/progress fields; does not authenticate the HTTP caller.",
+        "operationId": "collector_status",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectorStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "500": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Unhandled server failure (default plain text)."
+          }
+        },
+        "summary": "Collector Status",
+        "x-audience": "public",
+        "x-implementation-status": "IMPLEMENTED"
+      }
+    },
+    "/api/dashboard": {
+      "get": {
+        "description": "Current COMPLETE relation counts (legacy fallback until first COMPLETE per stream); recent frozen events. Message aggregates are not snapshot-scoped.",
+        "operationId": "get_dashboard",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Dashboard"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "500": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Unhandled server failure (default plain text)."
+          }
+        },
+        "summary": "Get Dashboard",
+        "x-audience": "public",
+        "x-implementation-status": "IMPLEMENTED"
+      }
+    },
+    "/api/dialogs": {
+      "get": {
+        "description": "Latest collected_at dialog batch; limit clamps to 1..2000. No snapshot-scoped message corpus.",
+        "operationId": "get_collected_dialogs",
+        "parameters": [
+          {
+            "description": "Clamped to 1..2000; out-of-range integers are accepted",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 500,
+              "description": "Clamped to 1..2000; out-of-range integers are accepted",
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Dialog"
+                  },
+                  "title": "Response Get Collected Dialogs",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Unhandled server failure (default plain text)."
+          }
+        },
+        "summary": "Get Collected Dialogs",
+        "x-audience": "public",
+        "x-implementation-status": "IMPLEMENTED"
+      }
+    },
+    "/api/health": {
+      "get": {
+        "description": "Liveness only; does not check DB, VK authentication or LM Studio readiness. Version remains the existing app version.",
+        "operationId": "health",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "500": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Unhandled server failure (default plain text)."
+          }
+        },
+        "summary": "Health",
+        "x-audience": "public",
+        "x-implementation-status": "IMPLEMENTED"
+      }
+    },
+    "/api/import/file": {
+      "post": {
+        "description": "JSON/CSV/TSV/HTML/HTM/ZIP import; import_type relations or message_stats (business-validated 400). Relations require friend/follower. Maximum 100 MiB checked after read. HTML remains UNKNOWN. Archive members commit independently. Returns real local stored_as path; privacy hardening is U06.",
+        "operationId": "post_import_file",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_post_import_file"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/SnapshotFileResult"
+                    },
+                    {
+                      "$ref": "#/components/schemas/CountFileResult"
+                    }
+                  ],
+                  "title": "Response Post Import File"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Domain/import/collector input or operation failure."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Unhandled server failure (default plain text)."
+          }
+        },
+        "summary": "Post Import File",
+        "x-audience": "public",
+        "x-implementation-status": "IMPLEMENTED"
+      }
+    },
+    "/api/import/snapshot": {
+      "post": {
+        "description": "Immutable relation capture; new UUID unless explicit replay. Complete empty sets replace current state. Backdated captures repair predecessor/successor events atomically. First complete capture is a baseline; no observed-change event.",
+        "operationId": "post_snapshot",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "description": "Complete replacement declaration by default, including people: []. Domain validation returns 400, not 422. Extra fields ignored. Explicit ID replay requires identical metadata/content. UNKNOWN/PARTIAL cannot replace current truth. No snapshot read/list API is exposed.",
+                "properties": {
+                  "captured_at": {
+                    "description": "ISO date/time when truthy, taking precedence over snapshot_date. Naive timestamp uses application local time; precise timestamps normalize UTC."
+                  },
+                  "completeness": {
+                    "default": "DECLARED_COMPLETE",
+                    "enum": [
+                      "DECLARED_COMPLETE",
+                      "UNKNOWN",
+                      "PARTIAL"
+                    ],
+                    "type": "string"
+                  },
+                  "people": {
+                    "items": {
+                      "additionalProperties": true,
+                      "description": "Unique numeric vk_id 1..9223372036854775807 (integer or canonical integer string), or screen_name when vk_id absent/null. Name must contain non-whitespace. Identity duplicates rejected with 400.",
+                      "properties": {
+                        "avatar_url": {
+                          "description": "String when truthy; absent/falsy becomes empty string."
+                        },
+                        "full_name": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "profile_url": {
+                          "description": "String when truthy; absent/falsy uses generated VK URL."
+                        },
+                        "screen_name": {
+                          "description": "Coerced to string, stripped/casefolded; ASCII letters/digits/._ only."
+                        },
+                        "vk_id": {
+                          "type": [
+                            "integer",
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "full_name"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "relation_type": {
+                    "enum": [
+                      "friend",
+                      "follower"
+                    ],
+                    "type": "string"
+                  },
+                  "snapshot_date": {
+                    "description": "Fallback ISO capture date/time; absent/null on replay reuses existing capture, otherwise ingestion time."
+                  },
+                  "snapshot_id": {
+                    "description": "UUID string expected; absent/falsy creates a new identity. Malformed non-string values can reach the existing unhandled 500 path."
+                  },
+                  "source": {
+                    "default": "manual_import",
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "source_reference": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "status": {
+                    "description": "CREATING/COMPLETE/INCOMPLETE/FAILED when truthy. Absent/falsy selects COMPLETE for DECLARED_COMPLETE, otherwise INCOMPLETE. COMPLETE with unknown/partial is 400."
+                  }
+                },
+                "required": [
+                  "relation_type",
+                  "people"
+                ],
+                "title": "Payload",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SnapshotResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Domain/import/collector input or operation failure."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Unhandled server failure (default plain text)."
+          }
+        },
+        "summary": "Post Snapshot",
+        "x-audience": "public",
+        "x-implementation-status": "IMPLEMENTED"
+      }
+    },
+    "/api/lmstudio/models": {
+      "get": {
+        "description": "One model discovery call via provider port; vendor metadata preserved. No inference readiness guarantee.",
+        "operationId": "lm_models",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ModelInfo"
+                  },
+                  "title": "Response Lm Models",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "500": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Unhandled server failure (default plain text)."
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Provider unavailable, invalid insight/configuration or generation circuit open."
+          }
+        },
+        "summary": "Lm Models",
+        "x-audience": "public",
+        "x-implementation-status": "IMPLEMENTED"
+      }
+    },
+    "/api/lmstudio/test": {
+      "post": {
+        "description": "Discovery connectivity test, not generation. Returns 200 even if models_count is zero.",
+        "operationId": "lm_test",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelTest"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "500": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Unhandled server failure (default plain text)."
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Provider unavailable, invalid insight/configuration or generation circuit open."
+          }
+        },
+        "summary": "Lm Test",
+        "x-audience": "public",
+        "x-implementation-status": "IMPLEMENTED"
+      }
+    },
+    "/api/messages/leaderboard": {
+      "get": {
+        "description": "Message-period aggregates, not a snapshot-reproducible message corpus.",
+        "operationId": "get_message_leaderboard",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LeaderboardItem"
+                  },
+                  "title": "Response Get Message Leaderboard",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "500": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Unhandled server failure (default plain text)."
+          }
+        },
+        "summary": "Get Message Leaderboard",
+        "x-audience": "public",
+        "x-implementation-status": "IMPLEMENTED"
+      }
+    },
+    "/api/people": {
+      "get": {
+        "description": "Current person convenience projection and COMPLETE relation flags. Message periods can yield multiple rows per person; no pagination.",
+        "operationId": "get_people",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PersonListItem"
+                  },
+                  "title": "Response Get People",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "500": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Unhandled server failure (default plain text)."
+          }
+        },
+        "summary": "Get People",
+        "x-audience": "public",
+        "x-implementation-status": "IMPLEMENTED"
+      }
+    },
+    "/api/people/{person_id}": {
+      "get": {
+        "description": "Current person, message periods, frozen relation events and persisted insight JSON strings. Legacy historical attributes cannot be reconstructed.",
+        "operationId": "get_person",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "person_id",
+            "required": true,
+            "schema": {
+              "title": "Person Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Person, preview or collector operation not found."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Unhandled server failure (default plain text)."
+          }
+        },
+        "summary": "Get Person",
+        "x-audience": "public",
+        "x-implementation-status": "IMPLEMENTED"
+      }
+    },
+    "/api/people/{person_id}/insight": {
+      "post": {
+        "description": "Explicit person analysis and persistence. U09 generation: max 3 attempts, max retry sleep 1.5s, breaker 3 failures/30s. Open circuit, provider errors, invalid output/configuration map 503. No total deadline, fallback or RAG; discovery may occur while generation is open.",
+        "operationId": "create_insight",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "person_id",
+            "required": true,
+            "schema": {
+              "title": "Person Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Insight"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Person, preview or collector operation not found."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Unhandled server failure (default plain text)."
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                }
+              }
+            },
+            "description": "Provider unavailable, invalid insight/configuration or generation circuit open."
+          }
+        },
+        "summary": "Create Insight",
+        "x-audience": "public",
+        "x-implementation-status": "IMPLEMENTED"
+      }
+    },
+    "/api/settings": {
+      "get": {
+        "description": "String-valued settings mapping; current defaults are three lmstudio keys.",
+        "operationId": "settings_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Settings Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "500": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Unhandled server failure (default plain text)."
+          }
+        },
+        "summary": "Settings Get",
+        "x-audience": "public",
+        "x-implementation-status": "IMPLEMENTED"
+      },
+      "put": {
+        "description": "Only three lmstudio keys stored, all values stringified and unknown keys ignored; response is the settings mapping.",
+        "operationId": "settings_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "description": "Accepts any JSON object. Only lmstudio_base_url, lmstudio_model, lmstudio_temperature are saved after Python str(value) conversion. Unknown keys ignored. No URL/temperature validation at this boundary; no retry/provider selector fields.",
+                "properties": {
+                  "lmstudio_base_url": {},
+                  "lmstudio_model": {},
+                  "lmstudio_temperature": {}
+                },
+                "title": "Payload",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Settings Put",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Unhandled server failure (default plain text)."
+          }
+        },
+        "summary": "Settings Put",
+        "x-audience": "public",
+        "x-implementation-status": "IMPLEMENTED"
+      }
+    }
+  },
+  "servers": [
+    {
+      "description": "Default local loopback server",
+      "url": "http://127.0.0.1:8765"
+    }
+  ]
+}

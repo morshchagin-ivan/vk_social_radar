@@ -1,3 +1,5 @@
+> **U04 current evidence:** [test_api_contract.py](test_api_contract.py) implements 23 offline runtime/contract tests; [report](../docs/certification/U04_API_CONTRACT_REPORT.md). [Canonical API](../11_OPENAPI.yaml) and [guide](../12_API_GUIDE.md) supersede incompatible API examples below. Remaining scenarios are target specifications, not executed live checks.
+
 > **Verification status: TARGET TEST SPECIFICATION / PLANNED CHECKS.**
 > PASS labels, quality thresholds and acceptance boxes below describe intended checks, not completed runtime evidence.
 > Verified results: [Certification audit](../docs/certification/00_REPOSITORY_AS_IS.md). Current scope: [Architecture Status](../docs/certification/ARCHITECTURE_STATUS.md).

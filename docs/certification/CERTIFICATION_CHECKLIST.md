@@ -1,23 +1,21 @@
-# Certification Baseline Checklist
+# Certification checklist
 
-Baseline 1.0 · 2026-09-23. Галочка означает проверенный documentary deliverable, не выполнение target capability. Источник результатов — [Baseline upgrade report](BASELINE_UPGRADE_REPORT.md). Pending items не отмечаются по факту генерации файла.
+Updated 2026-09-24 after U04. Checked boxes describe verified scope only; historical [baseline report](BASELINE_UPGRADE_REPORT.md) is unchanged.
 
-- [ ] Git revision known
-- [x] README current/target distinction — reviewed against frozen audit
-- [x] Current C4 — actual modules and flows only
-- [x] Target C4 — planned boundaries labelled
-- [x] ADR 001–006 — all template fields and separate implementation statuses checked
-- [x] Architecture status — allowed vocabulary and Uxx links checked
-- [x] Traceability — existing FR IDs and actual/target API distinguished
-- [x] Technical debt — defects separated from roadmap gaps
-- [x] NFR baseline — code settings distinguished from proposed/TBD metrics
-- [x] API status — mismatch retained; YAML comments only
-- [x] Data model status — eight tables and known P0 drift documented
-- [x] Privacy status — Git/local-policy limitations retained
-- [x] Tests evidence — prior 18 + 8 audit results, no new execution claimed
-- [x] Defense guide — 20 evidence-based questions and static demo path reviewed
-- [x] All relative links valid — static target-existence validation
-- [x] Mermaid blocks parse or syntax checked — syntax review/basic screening only; parser unavailable
-- [x] No target capability called implemented without evidence — semantic review against audit
+- [x] Git branch/revisions and protected tags verified; U03 ancestor retained.
+- [x] Current/target distinction preserved in README, architecture status, C4 and ADRs.
+- [x] U02/U03 migration and immutable relation evidence retained on temporary databases.
+- [x] One canonical runtime OpenAPI 3.1 artifact at root; old feature proposal clearly archived/non-canonical.
+- [x] 30 application operations (29 public + shell), explicit unique operationIds and 21 frontend calls covered.
+- [x] Request/response/error and security semantics aligned; `/api` compatibility preserved, no fake Bearer auth.
+- [x] Contract governance IMPLEMENTED: standard-discoverable runtime/export/semantic/UI drift tests and mutation rejection.
+- [x] 23 U04 tests + existing regressions: 140 unittest PASS; 8 additional functions separately PASS.
+- [x] YAML/JSON parsing, component reference checks, FastAPI structural model and generated comparison PASS.
+- [x] No real DB writes, network, live browser/provider calls or new dependencies.
+- [ ] Formal OpenAPI spec validator/client generation — unavailable/not run, not claimed.
+- [ ] Live VK/LM Studio/Chromium E2E — not run.
+- [ ] U06 authentication/access/privacy policy hardening — separate work.
+- [ ] U07 unified runner/CI — separate work; eight plain functions still require explicit invocation.
+- [ ] Full message snapshot reproducibility, RAG, Graph, Export, Scheduler — not implemented by U04.
 
-Git revision остаётся открытой, пока не предоставлен настоящий checkout. Test evidence — результаты прежнего audit, а не новый test run. API status — прозрачное описание mismatch, не исправленный contract. NFR baseline — измеримые предложения/TBD, не выполненные SLA. Mermaid parser при отсутствии не подменяется утверждением о render success.
+[U04 report](U04_API_CONTRACT_REPORT.md) · [API status](API_STATUS.md) · [Inventory](U04_RUNTIME_API_INVENTORY.md). Mermaid review is syntax screening, not a renderer certification. NFR proposals remain proposals, not verified SLAs.

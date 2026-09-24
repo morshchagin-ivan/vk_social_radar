@@ -1,6 +1,6 @@
 # C4 CURRENT — verified working copy
 
-Baseline 1.0 + U02/U03/U05/U09 · 2026-09-23. AS-IS: один local FastAPI process, static browser UI, SQLite/files и внешние VK web/local inference процессы. Это обзор context/containers с module-level деталями внутри backend, не утверждение об отдельных deployment services.
+Baseline 1.0 + U02/U03/U04/U05/U09 · 2026-09-23. AS-IS: один local FastAPI process, static browser UI, SQLite/files и внешние VK web/local inference процессы. Это обзор context/containers с module-level деталями внутри backend, не утверждение об отдельных deployment services.
 
 ```mermaid
 flowchart LR
@@ -54,3 +54,5 @@ Composition хранит одну active endpoint binding на процесс: b
 Здесь нет React, Scheduler, RAG, AI Worker, Social Graph, Repository, Kafka или Redis. Non-AI analytics не читает VK напрямую, использует COMPLETE v2 snapshots для current relation counts; message analytics остаётся period-based и не snapshot-scoped. Код и wiring исследованы, live VK/LLM не запускались. [Target](C4_TARGET.md), [gaps](TECHNICAL_DEBT_REGISTER.md), [audit](00_REPOSITORY_AS_IS.md).
 
 U03 adds snapshots/snapshot_people/snapshot_events and a nullable namespaced people.snapshot_key. Complete source rows are immutable; events are derived and can be repaired after backdated insertion. Order: captured_at then insertion sequence, date-only input retained with date precision. Per-stream legacy fallback stops at the first COMPLETE v2 capture. New event names/URLs come from frozen membership, legacy events remain labelled legacy_unknown. [U03 evidence](U03_IMMUTABLE_SNAPSHOT_REPORT.md).
+
+U04 adds typed response/metadata at the existing FastAPI boundary. [Canonical OpenAPI](../../11_OPENAPI.yaml) is exported from app.openapi; [tests](../../tests/test_api_contract.py) check 30 operations/21 frontend call sites and reject drift. No new server, auth gateway, repository, route family or frontend dependency. [Contract evidence](U04_API_CONTRACT_REPORT.md).

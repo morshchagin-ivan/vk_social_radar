@@ -1,10 +1,10 @@
 # VK Social Radar — Certification Architecture Baseline
 
-**Baseline:** 1.0 · **Updated:** 2026-09-24 · **Repository:** `C:\Developments\Javascript\VK` · **Runtime version:** 0.4.2. U03 build uses `certification/architecture-upgrade` on protected U09; exact revisions/tags in the [U03 report](U03_IMMUTABLE_SNAPSHOT_REPORT.md).
+**Baseline:** 1.0 · **Updated:** 2026-09-24 · **Repository:** `C:\Developments\Javascript\VK` · **Runtime version:** 0.4.2. U04 build uses `certification/architecture-upgrade` on U03; exact revisions/tags in the [U04 report](U04_API_CONTRACT_REPORT.md).
 
 This repository contains a working MVP and a documented target architecture. Target components are never presented as implemented unless confirmed by code and tests.
 
-После documentary U01 реализованы U02 migration, U05 provider, U09 resilience и U03 immutable relation foundation. Принятие остальных ADR не означает готовность кода. Historical audit reports retain their original findings; current status is maintained in the linked status/data/report pages.
+После documentary U01 реализованы U02 migration, U05 provider, U09 resilience, U03 immutable relation foundation и U04 runtime contract governance. Принятие остальных ADR не означает готовность кода. Historical audit reports retain their original findings; current status is maintained in the linked status/data/report pages.
 
 ## What is implemented
 
@@ -22,9 +22,9 @@ Graph, Scheduler, Export — более поздний roadmap U14–U16; vector
 
 ## Known gaps
 
-[Technical Debt Register](TECHNICAL_DEBT_REGISTER.md) разделяет дефекты и roadmap. U02/U03 resolve schema upgrade and new relation same-day/empty/replay/backdated defects in code. User DB remains unmigrated; legacy history cannot be reconstructed. API/OpenAPI mismatch, privacy hardening, collector completeness and broader message/AI scope remain open.
+[Technical Debt Register](TECHNICAL_DEBT_REGISTER.md) разделяет дефекты и roadmap. U02/U03 resolve schema upgrade and new relation same-day/empty/replay/backdated defects in code. User DB remains unmigrated; legacy history cannot be reconstructed. U04 resolves current API/OpenAPI drift; privacy hardening, collector completeness and broader message/AI scope remain open.
 
-- [API status](API_STATUS.md): current `/api`, target `/api/v1`, U04.
+- [API status](API_STATUS.md): canonical current `/api`, archived `/api/v1` proposal, U04 implemented.
 - [Data model status](DATA_MODEL_STATUS.md): eleven tables, schema v2, immutable relation foundation and preserved legacy history.
 - [Security/privacy](SECURITY_PRIVACY_STATUS.md): local defaults есть, strict guarantees частичны.
 - [NFR baseline](NFR_BASELINE.md): подтверждённые свойства отдельно от предложенных метрик; неизвестные значения TBD.
@@ -50,4 +50,4 @@ Audit от 2026-09-23: **18 unittest passed + 8 existing plain functions passed 
 
 Working MVP → Architecture Audit → Known Gaps → ADR → Target Architecture → Prioritized Upgrade Backlog → Controlled Evolution.
 
-[Evolution](ARCHITECTURE_EVOLUTION.md) связывает U01–U13 с acceptance evidence. Latest U03 gate: **117 unittest + 8 additional functions PASS**, no network/user DB writes; [report](U03_IMMUTABLE_SNAPSHOT_REPORT.md). Next recommendation only: **U04 actual API contract**. For operation use [root README](../../README.md); the [Defense Guide](DEFENSE_GUIDE.md) retains baseline-era context.
+[Evolution](ARCHITECTURE_EVOLUTION.md) связывает U01–U13 с acceptance evidence. Latest U04 gate: **140 unittest + 8 additional functions PASS**, no network/user DB writes; [report](U04_API_CONTRACT_REPORT.md). Next recommendation only: **U06 privacy/access hardening**. For operation use [root README](../../README.md); the [Defense Guide](DEFENSE_GUIDE.md) retains baseline-era context.

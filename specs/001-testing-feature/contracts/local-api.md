@@ -1,3 +1,5 @@
+> **NON-CANONICAL TARGET / ARCHIVED DESIGN.** No runtime implementation guarantee. U04 current API source: [root runtime guide](../../../12_API_GUIDE.md); follow its canonical OpenAPI link. Proposed endpoints/auth below are not current behavior.
+
 # Local Interface Contracts: Testing Feature
 
 These contracts describe local application interfaces for managing validation tests and test runs.

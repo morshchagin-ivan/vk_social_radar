@@ -6,7 +6,7 @@ Legend: IMPLEMENTED = существующая technology/component boundary; PA
 
 ```mermaid
 flowchart TD
-  UI["IMPLEMENTED: Static UI"] --> API["PARTIAL: Backend API - U04"]
+  UI["IMPLEMENTED: Static UI"] --> API["IMPLEMENTED: Current API contract - U04"]
   API --> App["PARTIAL: Application Services"]
   App --> Ports["PLANNED: Persistence Ports - U12"]
   Ports --> SQLAdapter["PLANNED: SQLite Adapter boundary - U12"]
@@ -30,14 +30,14 @@ flowchart TD
   Provider --> Resilience["IMPLEMENTED: Generation retry and Circuit Breaker - U09"]
   Resilience --> LMAdapter["IMPLEMENTED: LM Studio Adapter - U05"]
   LMAdapter --> LM["IMPLEMENTED: LM Studio HTTP integration"]
-  Gates["PLANNED: Quality Gates - U07"] --> ContractGate["PARTIAL: U02 migration and U05/U09 AI behavior tests"]
+  Gates["PLANNED: Quality Gates - U07"] --> ContractGate["IMPLEMENTED: Runtime contract drift gate - U04"]
   Gates --> TestGate["PARTIAL: Behavior tests"]
   Gates --> Eval["PLANNED: AI retrieval evaluation"]
   classDef implemented fill:#dcfce7,stroke:#166534,color:#111827
   classDef partial fill:#fef3c7,stroke:#92400e,color:#111827
   classDef planned fill:#e0e7ff,stroke:#4338ca,color:#111827
-  class UI,DB,LM,Provider,LMAdapter,Resilience,Snapshot,Diff implemented
-  class API,App,Orchestrator,VKAdapter,ACL,Analytics,AI,TestGate,ContractGate partial
+  class UI,API,ContractGate,DB,LM,Provider,LMAdapter,Resilience,Snapshot,Diff implemented
+  class App,Orchestrator,VKAdapter,ACL,Analytics,AI,TestGate partial
   class Ports,SQLAdapter,Strategies,Run,Index,Retrieval,Context,Gates,Eval planned
 ```
 
@@ -48,3 +48,5 @@ LLM port уже отделяет current person insight use case от concrete H
 U06 privacy действует поперёк всей схемы: endpoint policy, safe diagnostics, local storage/package audit. U07 gates планируются; присутствующие tests не дают оснований объявлять CI реализованной. Graph/Export/Scheduler остаются P2 U14–U16 и не обязательны для этого ядра. [Evolution and acceptance](ARCHITECTURE_EVOLUTION.md), [CURRENT](C4_CURRENT.md).
 
 U03 implementation is narrower than the full target chain: relation imports can declare complete sets; the current DOM collector cannot prove completeness and produces INCOMPLETE observations. No automatic index/AI pipeline, retrieval, Graph or immutable messages were added. [U03 evidence](U03_IMMUTABLE_SNAPSHOT_REPORT.md).
+
+U04 implemented current contract governance only: canonical `/api`, no fictitious auth or target endpoints. Future API resources remain planned; full CI/unified runner remains U07. [U04 evidence](U04_API_CONTRACT_REPORT.md).

@@ -41,7 +41,7 @@ Code/wiring подтверждены [аудитом](docs/certification/00_REPO
 
 ## Known limitations
 
-U03 resolves same-day/repeated/empty/backdated defects for new relation snapshots. Legacy history is retained without fabricated capture identity/completeness; message_stats and AI remain outside snapshot reproducibility. U02 исправляет schema drift при startup, но не восстанавливает отсутствующие исторические metadata. OpenAPI target `/api/v1` не соответствует current `/api`. Repository/Strategy отсутствуют; DIP ограничен AI/provider boundary. Arbitrary LLM endpoint/raw diagnostics/fail-open whitelist мешают строгой privacy guarantee; полный privacy audit Git history остаётся U06. [Debt register](docs/certification/TECHNICAL_DEBT_REGISTER.md), [API status](docs/certification/API_STATUS.md), [privacy](docs/certification/SECURITY_PRIVACY_STATUS.md).
+U03 resolves same-day/repeated/empty/backdated defects for new relation snapshots. Legacy history is retained without fabricated capture identity/completeness; message_stats and AI remain outside snapshot reproducibility. U02 исправляет schema drift при startup, но не восстанавливает отсутствующие исторические metadata. U04 canonical OpenAPI now matches current `/api`; old `/api/v1` proposal is archived/non-canonical. Repository/Strategy отсутствуют; DIP ограничен AI/provider boundary. Arbitrary LLM endpoint/raw diagnostics/fail-open whitelist мешают строгой privacy guarantee; полный privacy audit Git history остаётся U06. [Debt register](docs/certification/TECHNICAL_DEBT_REGISTER.md), [API status](docs/certification/API_STATUS.md), [privacy](docs/certification/SECURITY_PRIVACY_STATUS.md).
 
 U09 сохраняет HTTP timeouts 8/120s: retries не гарантируют hard total latency. Circuit state живёт только в процессе и сбрасывается при restart/смене endpoint. При auto-model selection discovery может выполняться даже при OPEN generation; уже допущенные calls могут завершить retry loop. [Точные границы и NFR](docs/certification/NFR_BASELINE.md).
 
@@ -51,7 +51,7 @@ U09 сохраняет HTTP timeouts 8/120s: retries не гарантируют
 
 ## Architecture evolution / backlog
 
-[Evolution stages](docs/certification/ARCHITECTURE_EVOLUTION.md) и [U01–U17 backlog](docs/certification/05_UPGRADE_BACKLOG.md). U02/U03/U05/U09 завершены в заявленном scope; следующий рекомендуемый implementation step — U04 actual API contract, пока PLANNED. Вся Data Architecture не объявляется READY.
+[Evolution stages](docs/certification/ARCHITECTURE_EVOLUTION.md) и [U01–U17 backlog](docs/certification/05_UPGRADE_BACKLOG.md). U02/U03/U04/U05/U09 завершены в заявленном scope; следующий рекомендуемый implementation step — U06 privacy/access hardening, пока PLANNED. Вся Data Architecture не объявляется READY.
 
 ## Running locally
 
@@ -75,7 +75,7 @@ U09 сохраняет HTTP timeouts 8/120s: retries не гарантируют
 .\run_tests.bat
 ```
 
-Эквивалент: `.venv\Scripts\python.exe -m unittest discover -s tests -v`. U03 standard runner — **117 unittest PASS**: 34 U03 + 25 U09 + 26 U05 AI + 14 U02 migration + 18 existing. Отдельно выполнены **8 existing plain functions PASS** из `tests/test_v043_organization_source.py`; стандартный runner по-прежнему их не обнаруживает. Unified runner/CI — U07; **CI отсутствует**.
+Эквивалент: `.venv\Scripts\python.exe -m unittest discover -s tests -v`. U04 standard runner — **140 unittest PASS**: 23 U04 + 34 U03 + 25 U09 + 26 U05 AI + 14 U02 migration + 18 existing. Отдельно выполнены **8 existing plain functions PASS** из `tests/test_v043_organization_source.py`; стандартный runner по-прежнему их не обнаруживает. Unified runner/CI — U07; **CI отсутствует**.
 
 U02 изолирует DB/storage/backup paths новых и существующих DB tests; CSV test также подменяет импортированный `IMPORT_DIR`. Тесты используют temporary directories, не рабочие БД/imports/profile и не VK/LLM/network. Две прежние ResourceWarning в marker tests `test_v031.py` не являются failures и остаются вне U02. Команды и результаты — [U02 report](docs/certification/U02_SCHEMA_MIGRATION_REPORT.md); [historical coverage limits](docs/certification/03_SDD_CODE_GAP_ANALYSIS.md).
 
@@ -137,3 +137,9 @@ Manual/CSV/JSON relation import is a declaration of a complete replacement set, 
 Legacy membership supplies current counts only until the first COMPLETE v2 snapshot for that relation stream; legacy events remain labelled `legacy_unknown`. New events render frozen historical names/URLs. The old same-day friend→follower inference is not emitted for new captures: friends/followers have independent evidence. Message analytics/AI are not snapshot-reproducible; RAG remains NO_RAG. No Event Sourcing or automatic AI pipeline was introduced.
 
 The startup migration supports v1→v2 and recognized v0→v2 with a pre-change SQLite backup. No migration was applied to the user database during this build. Empty v2 user history prevents automatic demo seeding; broader demo-mode work remains U13.
+
+## U04 runtime API contract governance
+
+**IMPLEMENTED**: [canonical OpenAPI 3.1](11_OPENAPI.yaml) generated from FastAPI, [runtime guide](12_API_GUIDE.md), [inventory](docs/certification/U04_RUNTIME_API_INVENTORY.md), [report](docs/certification/U04_API_CONTRACT_REPORT.md). `/api` preserved; 29 public operations + HTML shell, 21 frontend call sites, explicit operationIds, typed responses and accurate errors. Auth is absent; RAG/Graph/Export remain planned.
+
+Run `.venv\Scripts\python.exe -B scripts/export_openapi.py --check` for artifact drift and `.venv\Scripts\python.exe -B -m unittest discover -s tests -p test_api_contract.py -v` for semantic/UI/behavior coverage. Edit route metadata/models then regenerate with the same exporter without `--check`. JSON-form YAML 1.2 needs no new dependency. Formal OpenAPI validator/client generation was not available/run. No frontend changes.

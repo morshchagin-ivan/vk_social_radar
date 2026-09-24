@@ -44,3 +44,5 @@ The requested list contains infrastructure technologies as well as architectural
 [ADR rationale](../adr/README.md), [NFR](NFR_BASELINE.md), [U01–U17](05_UPGRADE_BACKLOG.md). Reconsider these choices only on changed requirements or measured constraints.
 
 U03 uses immutable state snapshots with derived, rebuildable membership diffs/events. It is **not Event Sourcing**. Mutable people remain convenience/current records; message_stats, AI inputs and legacy event names remain outside immutable reproduction. 34 U03 behavior/migration tests PASS.
+
+U04 implements **Contract Governance** for the current runtime: generated canonical OpenAPI plus semantic route/schema/security/frontend checks and synthetic response fixtures. [Evidence](U04_API_CONTRACT_REPORT.md). This does not implement global DIP, CI, authentication or target API resources.

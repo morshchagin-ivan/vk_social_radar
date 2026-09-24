@@ -1,22 +1,23 @@
 # API Status
 
-Baseline 1.0 · 2026-09-23. **Runtime unchanged. Contract consistency remains FAIL.**
+**U04 IMPLEMENTED · Contract Governance IMPLEMENTED · API drift RESOLVED for the current runtime · 2026-09-24.** [Report](U04_API_CONTRACT_REPORT.md) and [pre-build/final inventory](U04_RUNTIME_API_INVENTORY.md).
 
-| Aspect | CURRENT | TARGET proposal |
-|---|---|---|
-| Base | `http://127.0.0.1:8765/api` | `/api/v1`; legacy YAML also names port 8000/HTTPS |
-| Version | app 0.4.2 | YAML API 1.0.0 |
-| Operations | 29 `/api/*` operations | 18 YAML operations |
-| Contract source | [main.py](../../app/main.py) decorators and FastAPI generated schema | [11_OPENAPI.yaml](../../11_OPENAPI.yaml), marked TARGET CONTRACT |
-| Security | no bearer validation | global BearerAuth in YAML; policy requires U04/U06 decision |
-| Schemas | generic dict/list annotations, limited validation | largely empty object schemas; not a finished contract |
+| Aspect | Verified current contract |
+|---|---|
+| Canonical artifact | [root 11_OPENAPI.yaml](../../11_OPENAPI.yaml), generated from FastAPI metadata/models (strategy A) |
+| Format/server | OpenAPI 3.1.0, JSON-form YAML 1.2; http://127.0.0.1:8765 with `/api` paths |
+| Operations | 29 public API + 1 internal HTML shell = 30 canonical; 21 frontend call sites covered |
+| IDs | 30 explicit stable unique operationIds |
+| Schemas | 27 explicit response-model operations, two existing typed settings mappings, HTML shell; 32 components including framework validation/multipart schemas |
+| Requests | preserved dict/service validation and coercion, multipart required fields, required path/query fields; limits documented as clamping |
+| Errors | JSON detail for mapped errors; framework 422 detail array; generic 500 plain text; startup can return JSON 500; provider/circuit 503 |
+| Security | no API authentication; no Bearer requirement; local single-user boundary, U06 remains open |
+| Ownership | author route metadata/models, export root artifact; feature YAML archived/non-canonical |
+| Drift gate | 23 new standard-discoverable tests; exact fresh app.openapi export + semantic route/param/schema/security/UI checks + mutation rejection |
+| Validation | JSON/YAML parse, reference/structural checks and behavior fixtures PASS; formal OpenAPI validator unavailable; no client generation claim |
 
-Prior audit generated OpenAPI 3.1.0 without startup. Exact prefix agreement: none; after normalization only GET health, GET/PUT settings, GET collector/status coincide. There are 25 normalized runtime-only operations and 14 missing target operations. Root `/`/framework documentation/static routes are excluded from the 29 count.
+The former 18-operation `/api/v1` target is preserved only in the existing feature proposal. All 18 old URLs are non-runtime; after prefix normalization, 14 have no equivalent operation. Runtime retained `/api`, 200 job busy/pending semantics, integer person IDs and no auth. No target endpoints were implemented to match old documentation.
 
-Current examples: `/api/people`, `/api/changes`, `/api/dashboard`, `/api/import/file`, `/api/collector/collect/{kind}`, `/api/people/{person_id}/insight`. Target examples without current implementation: snapshots resource, `/ai/chat`, `/graph`, export. Person insight is not snapshot AI Report. `/collector/start` opens the browser, not a full `/collector/run` snapshot workflow.
+U03 appears through relation import/save, dashboard/people flags and changes; there is no snapshot resource route. Incomplete collector observations never replace current truth. Message_stats/AI are not snapshot-reproducible. U05/U09 appear through existing insight and model discovery/test routes; controlled 503 is retained. Auth, RAG, Graph, Export and Scheduler are not implemented.
 
-Mismatches include `/persons` vs `/people`, integer vs UUID IDs, pagination/filtering, 200 vs 202 job status, `{detail}` vs documented error envelope, missing auth, ignored settings fields, absent report/chat/search/export routes. API Guide and feature local-api also disagree with YAML. Full inventory: [audit report 01](01_ARCHITECTURE_INVENTORY.md).
-
-**U04 resolution (PLANNED):** select canonical certification surface/versioning/compatibility policy; typed request/response models; consistent error/status/security; align runtime/generated schema/canonical YAML; contract gate U07. Merely adding comments or successfully parsing YAML does not execute this work. Root YAML content below comments is intentionally preserved, including known structural and schema weaknesses.
-
-[Data status](DATA_MODEL_STATUS.md) · [ADR-004](../adr/ADR-004-local-llm-provider-abstraction.md) · [backlog](05_UPGRADE_BACKLOG.md).
+Gate evidence: **140 unittest PASS** (23 U04 + 34 U03 + 25 U09 + 26 U05 + 14 U02 + 18 existing), **8 additional functions PASS**. No live VK/LM Studio/Chromium, network or user DB. [Guide](../../12_API_GUIDE.md) · [Backlog](05_UPGRADE_BACKLOG.md).
